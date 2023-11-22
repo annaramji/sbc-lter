@@ -1,0 +1,34 @@
+---
+title: "SBC LTER analysis"
+author: "Anna Ramji"
+format: html
+editor: visual
+---
+
+## Introduction
+
+In this Quarto Document, I'll be working with data from the Santa Barbara Coast LTER sites, analyzing data using statistical analysis methods covered in the Master of Environmental Data Science program's Environmental Data Science (EDS) 222: Statistics for Environmental Data Science course taught by Tamma Carleton (tcarleton\@ucsb.edu).
+
+## Background
+
+(Putting essential background information here)
+
+(setting up the problem)
+
+(metadata, column info, etc.)
+
+
+## Reading in the Data
+```{r}
+
+
+```
+
+
+
+
+
+```{r}
+
+```
+
