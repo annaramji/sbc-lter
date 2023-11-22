@@ -17,18 +17,25 @@ In this Quarto Document, I'll be working with data from the Santa Barbara Coast 
 
 (metadata, column info, etc.)
 
+### Dataset 1: Kelp Forest dynamics: Fish abundance
+
+Reed, D. and R. Miller. 2023. SBC LTER: Reef: Kelp Forest Community Dynamics: Fish abundance ver 38. Environmental Data Initiative. https://doi.org/10.6073/pasta/92003d368dfe121f6709ad1507412f66 (Accessed 2023-11-22)
+
+### Dataset 2: CA Spiny Lobster Data
+
+Reed, D. and R. Miller. 2023. SBC LTER: Reef: Abundance, size and fishing effort for California Spiny Lobster (Panulirus interruptus), ongoing since 2012 ver 9. Environmental Data Initiative. https://doi.org/10.6073/pasta/3595322687af94cd532620ad9db94c77 (Accessed 2023-11-22).
+
+### Dataset 3: Feeding relationships
+
+Santa Barbara Coastal LTER, J.E. Byrnes, D.C. Reed, B.J. Cardinale, K.C. Cavanaugh, S.J. Holbrook, and R.J. Schmitt. 2022. SBC LTER: Reef: Feeding relationships for kelp forest species ver 4. Environmental Data Initiative. https://doi.org/10.6073/pasta/e82a082f4440d469c84e11a265266004 (Accessed 2023-11-22).
 
 ## Reading in the Data
+
 ```{r}
 
 
 ```
 
-
-
-
-
 ```{r}
 
 ```
-
