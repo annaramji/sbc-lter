@@ -4,10 +4,10 @@ author: "Anna Ramji"
 format: html
 editor: visual
 ---
+
 ```{r}
 
 ```
-
 
 ## Introduction
 
@@ -35,7 +35,7 @@ Santa Barbara Coastal LTER, J.E. Byrnes, D.C. Reed, B.J. Cardinale, K.C. Cavanau
 
 ### Importing libraries
 
-```{r libraries}
+```{r libraries, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(readr)
 library(gt)
@@ -52,8 +52,47 @@ library(janitor)
 ```{r}
 
 
+
+```
+
+```{r lobsters}
+# using the package `here()`
+
+# setting the file path for our lobster abundance csv
+lobster_abundance_fp <- here("data", "lobsters", "knb-lter-sbc.77.9",  "Lobster_Abundance_All_Years_20230831.csv")
+
+# and setting the file path for our lobster trap counts csv
+lobster_trap_counts_fp <- here("data", "lobsters", "knb-lter-sbc.77.9", "Lobster_Trap_Counts_All_Years_20210519.csv")
+
+lobster_abd <- read_csv(lobster_abundance_fp) |> 
+  clean_names()
+
+
+lobster_trap <- read_csv(lobster_trap_counts_fp) |> 
+  clean_names()
+
+```
+
+
+```{r}
+head(lobster_abd)
+tail(lobster_abd)
+
 ```
 
 ```{r}
-
+head(lobster_trap)
 ```
+
+
+
+```{r}
+# setting file path for fish abundance
+fish_abd_fp <- here("data", "fish_abundance", "knb-lter-sbc.17.38", "Annual_fish_comb_20230814.csv")
+
+fish_abd <- read_csv(fish_abd_fp) |> 
+  clean_names()
+
+head(fish_abd)
+```
+
