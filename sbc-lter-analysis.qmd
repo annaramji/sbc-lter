@@ -48,6 +48,8 @@ library(tsibble)
 library(forecast)
 library(lubridate)
 
+library(vegan) # for diversity index
+
 ```
 
 ## Reading in the Data
@@ -379,10 +381,19 @@ make diversity index, look at relationship between water temp and diversity
 group by site, date
 
 summarize with shannon index
-
+https://rdrr.io/cran/vegan/man/diversity.html 
 
 
 
 Null hypothesis: water temperature has zero correlation with fish diversity
 Alternative hypothesis: water temperature is correlated with fish diversity
+
+```{r}
+
+food_web <- read_csv("data/food_web/knb-lter-sbc.56.4/byrnes_foodweb_table1.csv", na = c("-99999")) |> 
+  clean_names() 
+
+#vegan::diversity()
+
+```
 
