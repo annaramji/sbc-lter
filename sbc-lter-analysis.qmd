@@ -227,7 +227,7 @@ fish_temp_summary
 
 ```{r iucn-data}
 
-iucn_fp <- here("data", "redlist_species_data_fish", "assessments.csv")
+iucn_fp <- here("data", "redlist_species_data_all_fish", "assessments.csv")
 
 iucn_fish <- read_csv(iucn_fp) |> 
   clean_names() |> 
@@ -242,7 +242,7 @@ iucn_fish_names
 fish_temp_iucn <- inner_join(fish_temp, iucn_fish)
 head(fish_temp_iucn)
 
-
+# nrow()
 
 ```
 
