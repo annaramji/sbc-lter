@@ -78,7 +78,7 @@ lobster_trap <- read_csv(lobster_trap_counts_fp, na = c("-99999")) |>
 
 head(lobster_abd)
 tail(lobster_abd)
-head(lobster_trap)
+# head(lobster_trap)
 ```
 
 
@@ -107,16 +107,42 @@ head(fish_abd)
 # setting water temperature file path
 water_temp_fp <- here("data", "water-temp", "knb-lter-sbc.13.29", "Bottom_temp_all_years_20230724.csv")
 
-water_temp <- read_csv(water_temp_fp) |> 
+water_temp <- read_csv(water_temp_fp, na = c("-99999")) |> 
   clean_names() |> 
   rename("date" = date_local, "time" = time_local) |> 
-  select(-serial)
+  select(-serial) |> 
+  group_by(date)
 
 head(water_temp)
+tail(water_temp)
+```
+
+
+```{r}
+lobster_abd_temp <- left_join(lobster_abd, water_temp, by = c("date", "site"))
+head(lobster_abd_temp)
 ```
 
 ```{r}
 
 
+
+
+#ggplot(data = lobster_abd_temp) +
+ # geom_jitter(aes(x = temp_c, y = count))
+
+
+```
+
+```{r}
+ggplot(data = lobster_abd_temp) +
+  geom_line(aes(x = date, y = temp_c))
+
+```
+
+
+
+```{r}
+summary(lm(formula = temp_c ~ count, data = lobster_abd_temp))
 ```
 
