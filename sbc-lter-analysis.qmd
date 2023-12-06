@@ -44,6 +44,9 @@ library(feasts)
 library(here)
 library(patchwork)
 library(janitor)
+library(tsibble)
+library(forecast)
+library(lubridate)
 
 ```
 
@@ -101,6 +104,7 @@ fish_abd <- read_csv(fish_abd_fp, na = c("-99999")) |>
   select(-year, -month)
 
 head(fish_abd)
+tail(fish_abd)
 ```
 
 ```{r}
@@ -117,32 +121,72 @@ head(water_temp)
 tail(water_temp)
 ```
 
-
 ```{r}
-lobster_abd_temp <- left_join(lobster_abd, water_temp, by = c("date", "site"))
+sum(is.na(water_temp$temp_c))
+
+```
+
+
+```{r lobster_temp_join}
+lobster_abd_temp <- left_join(lobster_abd, water_temp, by = c("date", "site")) |> 
+  drop_na(temp_c)
+
 head(lobster_abd_temp)
 ```
 
 ```{r}
+# sum(is.na(lobster_abd_temp$temp_c))
+
+```
 
 
+```{r lobster_joined_group}
+
+lobster_summary <- lobster_abd_temp |> 
+  group_by(date, site) |> 
+  summarize(mean_temp = round(mean(temp_c, na.rm = TRUE), 3),
+            count = n())
+  
+lobster_summary
+
+```
 
 
-#ggplot(data = lobster_abd_temp) +
- # geom_jitter(aes(x = temp_c, y = count))
+```{r lobster_temp_reg}
+lobster_regression <- lm(formula = temp_c ~ count, data = lobster_abd_temp)
 
+summary(lobster_regression)
 
 ```
 
 ```{r}
+
 ggplot(data = lobster_abd_temp) +
-  geom_line(aes(x = date, y = temp_c))
+  geom_jitter(aes(x = temp_c, y = count,
+                  color = site))
 
+
+```
+
+```{r}
+ggplot(data = lobster_summary) +
+  geom_line(aes(x = date, y = mean_temp))
+
+```
+
+
+```{r}
+acf(water_temp$temp_c, lag.max=12)
 ```
 
 
 
 ```{r}
-summary(lm(formula = temp_c ~ count, data = lobster_abd_temp))
+as_tsibble(lobster_abd_temp) %>%
+  model(
+    classical_decomposition(value, type = "additive")
+  ) %>%
+  components() %>%
+  autoplot() 
 ```
 
