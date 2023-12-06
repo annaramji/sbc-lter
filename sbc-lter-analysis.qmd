@@ -85,15 +85,6 @@ tail(lobster_abd)
 ```
 
 
-```{r}
-
-```
-
-```{r}
-
-```
-
-
 
 ```{r}
 # setting file path for fish abundance
@@ -234,11 +225,35 @@ fish_temp_summary
 ```
 
 
+```{r iucn-data}
+
+iucn_fp <- here("data", "redlist_species_data_fish", "assessments.csv")
+
+iucn_fish <- read_csv(iucn_fp) |> 
+  clean_names() |> 
+  select(scientific_name, redlist_category, population_trend)
+
+head(iucn_fish)
+
+iucn_fish_names <- list(unique(iucn_fish$scientific_name))
+iucn_fish_names
+# cross-selecting species 
+
+fish_temp_iucn <- inner_join(fish_temp, iucn_fish)
+head(fish_temp_iucn)
+
+
+
+```
+
+
 ```{r}
 fish_temp_summary |> 
   ggplot(aes(x = date,
-             y = count)) +
-  geom_point()
+             y = count,
+             color=scientific_name)) +
+  geom_point() +
+  theme(legend.position = "none")
 ```
 
 
@@ -288,6 +303,13 @@ fish_count_plot
 
 ```
 
+
+```{r}
+hist(fish_temp_summary$mean_temp)
+#hist(fish_temp_summary$count)
+
+```
+
 ```{r fish_count_plot_facet}
 
 fish_count_plot_facet <- fish_temp_summary |> 
@@ -313,40 +335,54 @@ fish_count_plot_facet
 carp <- fish_temp_summary |> 
   filter(site %in% c("CARP"))
 
-carp |> 
-  ggplot(aes(x = mean_temp,
-             y = count)) +
-  geom_jitter(alpha = 0.5) +
-  geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
-  theme_bw() +
-  labs(x = "Mean temperature (C)",
-       y = "Count",
-       title = "SBC LTER Average temperature (Celsius) over time",
-       subtitle = "Carpenteria Test Site (CARP)")
+carp_plot <-  jitter_plot(.data = carp) +
+  labs(subtitle = "Carpenteria Test Site (CARP)")
+carp_plot
 
 
 ```
 
-```{r}
 
-jitter_plot(.data = carp) +
-  labs(subtitle = "CARP")
-
-```
 
 
 ```{r}
 
-fish_temp_summary |> 
-ggplot(aes(x = mean_temp,
-             y = count)) +
-  geom_jitter(alpha = 0.5) +
-  geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
-  facet_wrap(~scientific_name)
-  theme_bw() +
-  labs(x = "Mean temperature (C)",
-       y = "Count",
-       title = "SBC LTER Average temperature (Celsius) over time")
+
+
+# fish_temp_summary |> 
+# ggplot(aes(x = mean_temp,
+#              y = count)) +
+#   geom_jitter(alpha = 0.5) +
+#   geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
+#   facet_wrap(~scientific_name)
+#   theme_bw() +
+#   labs(x = "Mean temperature (C)",
+#        y = "Count",
+#        title = "SBC LTER Average temperature (Celsius) over time")
 
 ```
+
+
+
+```{r}
+
+
+
+```
+
+
+
+
+make diversity index, look at relationship between water temp and diversity
+
+
+group by site, date
+
+summarize with shannon index
+
+
+
+
+Null hypothesis: water temperature has zero correlation with fish diversity
+Alternative hypothesis: water temperature is correlated with fish diversity
 
