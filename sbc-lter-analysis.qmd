@@ -55,7 +55,7 @@ library(janitor)
 
 ```
 
-```{r lobsters}
+```{r lobsters_fp}
 # using the package `here()`
 
 # setting the file path for our lobster abundance csv
@@ -63,25 +63,31 @@ lobster_abundance_fp <- here("data", "lobsters", "knb-lter-sbc.77.9",  "Lobster_
 
 # and setting the file path for our lobster trap counts csv
 lobster_trap_counts_fp <- here("data", "lobsters", "knb-lter-sbc.77.9", "Lobster_Trap_Counts_All_Years_20210519.csv")
-
-lobster_abd <- read_csv(lobster_abundance_fp) |> 
-  clean_names()
-
-
-lobster_trap <- read_csv(lobster_trap_counts_fp) |> 
-  clean_names()
-
 ```
 
 
-```{r}
+```{r lobsters_readin}
+lobster_abd <- read_csv(lobster_abundance_fp, na = c("-99999")) |> 
+  clean_names() |> 
+  select(-year, -month)
+#|> 
+ # mutate("year" = lubridate::as_date(year))
+
+lobster_trap <- read_csv(lobster_trap_counts_fp, na = c("-99999")) |> 
+  clean_names()
+
 head(lobster_abd)
 tail(lobster_abd)
+head(lobster_trap)
+```
+
+
+```{r}
 
 ```
 
 ```{r}
-head(lobster_trap)
+
 ```
 
 
@@ -90,9 +96,27 @@ head(lobster_trap)
 # setting file path for fish abundance
 fish_abd_fp <- here("data", "fish_abundance", "knb-lter-sbc.17.38", "Annual_fish_comb_20230814.csv")
 
-fish_abd <- read_csv(fish_abd_fp) |> 
-  clean_names()
+fish_abd <- read_csv(fish_abd_fp, na = c("-99999")) |> 
+  clean_names() |> 
+  select(-year, -month)
 
 head(fish_abd)
+```
+
+```{r}
+# setting water temperature file path
+water_temp_fp <- here("data", "water-temp", "knb-lter-sbc.13.29", "Bottom_temp_all_years_20230724.csv")
+
+water_temp <- read_csv(water_temp_fp) |> 
+  clean_names() |> 
+  rename("date" = date_local, "time" = time_local) |> 
+  select(-serial)
+
+head(water_temp)
+```
+
+```{r}
+
+
 ```
 
