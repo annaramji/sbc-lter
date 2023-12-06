@@ -101,11 +101,24 @@ fish_abd_fp <- here("data", "fish_abundance", "knb-lter-sbc.17.38", "Annual_fish
 
 fish_abd <- read_csv(fish_abd_fp, na = c("-99999")) |> 
   clean_names() |> 
-  select(-year, -month)
+  select(-year, -month) |> 
+  filter(taxon_class %in% c("Actinopterygii"))
 
 head(fish_abd)
 tail(fish_abd)
 ```
+
+```{r}
+unique(fish_abd$taxon_order)
+```
+
+
+```{r}
+unique(fish_abd$taxon_genus)
+unique(fish_abd$taxon_class)
+
+```
+
 
 ```{r}
 # setting water temperature file path
@@ -120,6 +133,10 @@ water_temp <- read_csv(water_temp_fp, na = c("-99999")) |>
 head(water_temp)
 tail(water_temp)
 ```
+
+
+
+
 
 ```{r}
 sum(is.na(water_temp$temp_c))
@@ -161,9 +178,13 @@ summary(lobster_regression)
 
 ```{r}
 
-ggplot(data = lobster_abd_temp) +
+lobster_abd_temp |> 
+  ggplot(data = lobster_abd_temp) +
   geom_jitter(aes(x = temp_c, y = count,
-                  color = site))
+                  color = site)) +
+  facet_wrap(~site) 
+
+    
 
 
 ```
@@ -182,11 +203,150 @@ acf(water_temp$temp_c, lag.max=12)
 
 
 ```{r}
-as_tsibble(lobster_abd_temp) %>%
-  model(
-    classical_decomposition(value, type = "additive")
-  ) %>%
-  components() %>%
-  autoplot() 
+
+#lobster_abd_temp |> forecast::autoplot()
+
+# as_tsibble(lobster_abd_temp) %>%
+#   model(
+#     classical_decomposition(value, type = "additive")
+#   ) %>%
+#   components() %>%
+#   autoplot() 
+```
+
+
+
+```{r fish_temp}
+
+fish_temp <- left_join(fish_abd, water_temp, by = c("date", "site")) |> 
+  drop_na(temp_c)
+
+head(fish_temp)
+```
+
+```{r}
+fish_temp_summary <- fish_temp  |> 
+  group_by(date, scientific_name, site) |> 
+  summarize(mean_temp = (mean(temp_c, na.rm = TRUE)),
+            count = n())
+fish_temp_summary
+
+```
+
+
+```{r}
+fish_temp_summary |> 
+  ggplot(aes(x = date,
+             y = count)) +
+  geom_point()
+```
+
+
+```{r plotting_function}
+
+jitter_plot <- function(.data) {
+  ggplot(data = .data, 
+         aes(x = mean_temp,
+             y = count)) +
+    geom_jitter(alpha = 0.5) +
+    geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
+    labs(x = "Mean temperature (C)",
+       y = "Count",
+       title = "SBC LTER Average temperature (Celsius) over time") +
+    theme_bw() 
+}
+
+
+```
+
+
+```{r temp_time_plot}
+
+temp_time_plot <- jitter_plot(.data = fish_temp_summary)
+
+temp_time_plot
+```
+
+
+
+
+
+```{r}
+fish_count_plot <- fish_temp_summary |> 
+  ggplot(aes(x = mean_temp,
+             y = count)) +
+  geom_jitter() +
+  geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
+  theme_bw() +
+  labs(x = "Mean temperature (C)",
+       y = "Count",
+       title = "SBC LTER Average temperature (Celsius) over time")
+
+
+fish_count_plot
+
+
+```
+
+```{r fish_count_plot_facet}
+
+fish_count_plot_facet <- fish_temp_summary |> 
+  ggplot(aes(x = mean_temp,
+             y = count)) +
+  geom_jitter(alpha = 0.5) +
+  geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
+  facet_wrap(~site)
+  theme_bw() +
+  labs(x = "Mean temperature (C)",
+       y = "Count",
+       title = "SBC LTER Average temperature (Celsius) over time")
+
+
+fish_count_plot_facet
+
+
+```
+
+
+```{r site_selections}
+
+carp <- fish_temp_summary |> 
+  filter(site %in% c("CARP"))
+
+carp |> 
+  ggplot(aes(x = mean_temp,
+             y = count)) +
+  geom_jitter(alpha = 0.5) +
+  geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
+  theme_bw() +
+  labs(x = "Mean temperature (C)",
+       y = "Count",
+       title = "SBC LTER Average temperature (Celsius) over time",
+       subtitle = "Carpenteria Test Site (CARP)")
+
+
+```
+
+```{r}
+
+jitter_plot(.data = carp) +
+  labs(subtitle = "CARP")
+
+```
+
+
+```{r}
+
+fish_temp_summary |> 
+ggplot(aes(x = mean_temp,
+             y = count)) +
+  geom_jitter(alpha = 0.5) +
+  geom_smooth(method='lm', formula= y~x, color="lightcoral", se=F, size=1.5) +
+  facet_wrap(~scientific_name)
+  theme_bw() +
+  labs(x = "Mean temperature (C)",
+       y = "Count",
+       title = "SBC LTER Average temperature (Celsius) over time")
+
 ```
 
