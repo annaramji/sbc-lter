@@ -241,7 +241,8 @@ iucn_fish_names <- list(unique(iucn_fish$scientific_name))
 iucn_fish_names
 # cross-selecting species 
 
-fish_temp_iucn <- inner_join(fish_temp, iucn_fish)
+fish_temp_iucn <- inner_join(fish_temp, iucn_fish) |> 
+  select(-group, -mobility, -vis, -quad, -side)
 head(fish_temp_iucn)
 
 # nrow()
@@ -388,12 +389,48 @@ https://rdrr.io/cran/vegan/man/diversity.html
 Null hypothesis: water temperature has zero correlation with fish diversity
 Alternative hypothesis: water temperature is correlated with fish diversity
 
+
+
+```{r diversity}
+fish_diversity_df <- fish_temp_iucn |> 
+  select(date, site, count, temp_c, scientific_name, common_name, time, redlist_category, population_trend) |> 
+  mutate(year = lubridate::year(date)) |> 
+  relocate(year, .before = site) |> 
+  select(-date, -time) |> 
+  group_by(year, site, temp_c)
+#|> 
+ # summarize(crit = sum(count))
+
+fish_diversity <- fish_diversity_df |> 
+  summarize(index = vegan::diversity(count, index = "shannon"))
+
+head(fish_diversity)
+
+summary(lm(formula = index~temp_c))
+# take average for each year
+```
+
+
+1.. site year index
+2. site year temp -- average per site per year
+3. site year iucn status
+
 ```{r}
+fish_diversity |> 
+  ggplot(aes(x = temp_c))
+
+```
+
+
+
+
+
+
+```{r food-web}
 
 food_web <- read_csv("data/food_web/knb-lter-sbc.56.4/byrnes_foodweb_table1.csv", na = c("-99999")) |> 
   clean_names() 
 
-#vegan::diversity()
 
 ```
 
