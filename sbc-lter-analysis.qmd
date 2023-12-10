@@ -33,6 +33,16 @@ Reed, D. and R. Miller. 2023. SBC LTER: Reef: Abundance, size and fishing effort
 
 Santa Barbara Coastal LTER, J.E. Byrnes, D.C. Reed, B.J. Cardinale, K.C. Cavanaugh, S.J. Holbrook, and R.J. Schmitt. 2022. SBC LTER: Reef: Feeding relationships for kelp forest species ver 4. Environmental Data Initiative. https://doi.org/10.6073/pasta/e82a082f4440d469c84e11a265266004 (Accessed 2023-11-22).
 
+
+
+
+
+# Context
+
+## California Spiny Lobsters
+https://cadivingnews.com/the-lifecycle-of-spiny-lobsters/
+
+
 ### Importing libraries
 
 ```{r libraries, warning=FALSE, message=FALSE}
@@ -55,88 +65,135 @@ library(vegan) # for diversity index
 # Reading in the Data
 
 
-```{r lobsters_fp}
+```{r lobster_data}
 # using the package `here()`
 
 # setting the file path for our lobster abundance csv
 lobster_abundance_fp <- here("data", "lobsters", "knb-lter-sbc.77.9",  "Lobster_Abundance_All_Years_20230831.csv")
 
-# and setting the file path for our lobster trap counts csv
-lobster_trap_counts_fp <- here("data", "lobsters", "knb-lter-sbc.77.9", "Lobster_Trap_Counts_All_Years_20210519.csv")
-```
-
-
-```{r lobsters_readin}
+# read in lobster abundance data from filepath
 lobster_abd <- read_csv(lobster_abundance_fp, na = c("-99999")) |> 
   clean_names() |> 
-  select(-year, -month)
-#|> 
- # mutate("year" = lubridate::as_date(year))
+  mutate("day" = lubridate::day(date))
 
-lobster_trap <- read_csv(lobster_trap_counts_fp, na = c("-99999")) |> 
-  clean_names()
+# making a tidied subset, finding average count and size per year per site
+lobster_subset <- lobster_abd |> 
+  select(year, month, day, date, site, count, size_mm) |> 
+  group_by(year, site) |> 
+  summarize(avg_count = round(mean(count, na.rm = TRUE), 3), 
+            avg_size = round(mean(size_mm, na.rm = TRUE), 3))
 
-head(lobster_abd)
-tail(lobster_abd)
-# head(lobster_trap)
-```
-
-
-
-```{r}
-# setting file path for fish abundance
-fish_abd_fp <- here("data", "fish_abundance", "knb-lter-sbc.17.38", "Annual_fish_comb_20230814.csv")
-
-fish_abd <- read_csv(fish_abd_fp, na = c("-99999")) |> 
-  clean_names() |> 
-  select(-year, -month) |> 
-  filter(taxon_class %in% c("Actinopterygii"))
-
-head(fish_abd)
-tail(fish_abd)
-```
-
-```{r}
-unique(fish_abd$taxon_order)
-```
-
-
-```{r}
-unique(fish_abd$taxon_genus)
-unique(fish_abd$taxon_class)
 
 ```
 
 
-```{r}
+```{r lobster_plots}
+# plot average lobster abundance per site per year
+lobster_abd_plot <- ggplot(data = lobster_subset) + 
+  geom_point(aes(x = year, y = avg_count,
+                 color = site)) +
+  geom_line(aes(x = year, y = avg_count,
+                color = site)) +
+  geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 el nino
+  facet_wrap(~site) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(color = "Site",
+       x = "Year",
+       y = "Average Count",
+       title = "Lobster Abundance Averaged per Site per Year",
+       subtitle = "SBC LTER sites") +
+  theme(legend.position = "none")
+
+# view plot
+lobster_abd_plot
+
+# plot average lobster size per site per year
+lobster_size_plot <- lobster_subset |> ggplot() + 
+  geom_point(aes(x = year, y = avg_size,
+                 color = site)) +
+  geom_line(aes(x = year, y = avg_size,
+                 color = site)) +
+  # showing lobster size of sexual maturity 
+  geom_hline(yintercept = 82.55, linetype = "dashed", alpha = 0.5) + 
+  geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 el nino
+  facet_wrap(~site) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(
+    #color = "Site",
+       x = "Year",
+       y = "Average Size (mm)",
+       title = "Lobster Size Averaged per Site per Year",
+       subtitle = "organized by SBC LTER site") +
+  theme(legend.position = "none")
+
+
+lobster_size_plot
+  
+```
+
+
+
+```{r water-temp-data}
 # setting water temperature file path
 water_temp_fp <- here("data", "water-temp", "knb-lter-sbc.13.29", "Bottom_temp_all_years_20230724.csv")
 
+# reading in water temp data
 water_temp <- read_csv(water_temp_fp, na = c("-99999")) |> 
   clean_names() |> 
-  rename("date" = date_local, "time" = time_local) |> 
+  rename("date" = date_local, "time" = time_local) |> # cleaning names
   select(-serial) |> 
-  group_by(date)
-
-head(water_temp)
-tail(water_temp)
-```
+  mutate("year" = lubridate::year(date), # adding columns to join by
+         "month" = lubridate::month(date),  # and filter later on 
+         "day" = lubridate::day(date))
 
 
+# prepping water temp data to compare with lobster data
+
+# finding the average water temperatures in August (month = 8) per year per site
+# to use with Lobster Abundance data, since observations/data are only collected
+# in August each year
+
+august_temps <- water_temp |> 
+  filter(month %in% c(8)) |> # select August temps
+  group_by(year, site) |> 
+  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
 
 
+august_temp_trends <- ggplot(data = august_temps) +
+  geom_point(aes(x = year, 
+                 y = avg_temp,
+                 color = site)) +
+  geom_line(aes(x = year, 
+                y = avg_temp,
+                color = site)) +
+  theme_bw() +
+  facet_wrap(~site) +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(title = "Average Water Temperature in August over Time",
+       subtitle = "Ocean bottom temperatures (C) at SBC LTER sites", 
+       x = "Year",
+       y = "Average Water Temperature (C)")
 
-```{r}
-sum(is.na(water_temp$temp_c))
+august_temp_trends
 
+
+# make a lobster abundance-friendly water temperature subset 
+## (narrow data before joining)
+
+temp_lobster_plots <- august_temp_trends
+
+#head(water_temp)
+#tail(water_temp)
 ```
 
 
 ```{r lobster_temp_join}
-lobster_abd_temp <- left_join(lobster_abd, water_temp, by = c("date", "site")) |> 
-  drop_na(temp_c)
+#lobster_abd_temp <- left_join(lobster_abd, water_temp, by = c("date", "site")) |> 
+#  drop_na(temp_c)
 
-head(lobster_abd_temp)
+#head(lobster_abd_temp)
 ```
 
 ```{r}
@@ -203,6 +260,19 @@ acf(water_temp$temp_c, lag.max=12)
 ```
 
 
+
+```{r fish-data}
+# setting file path for fish abundance
+fish_abd_fp <- here("data", "fish_abundance", "knb-lter-sbc.17.38", "Annual_fish_comb_20230814.csv")
+
+fish_abd <- read_csv(fish_abd_fp, na = c("-99999")) |> 
+  clean_names() |> 
+  select(-year, -month) |> 
+  filter(taxon_class %in% c("Actinopterygii"))
+
+head(fish_abd)
+tail(fish_abd)
+```
 
 ```{r fish_temp}
 
