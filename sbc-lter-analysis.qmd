@@ -52,13 +52,8 @@ library(vegan) # for diversity index
 
 ```
 
-## Reading in the Data
+# Reading in the Data
 
-```{r}
-
-
-
-```
 
 ```{r lobsters_fp}
 # using the package `here()`
@@ -242,7 +237,10 @@ iucn_fish_names
 # cross-selecting species 
 
 fish_temp_iucn <- inner_join(fish_temp, iucn_fish) |> 
-  select(-group, -mobility, -vis, -quad, -side)
+  select(-group, -mobility, -vis, -quad, -side) |> 
+  mutate(year = lubridate::year(date)) |> 
+  relocate(year, .before = site) 
+
 head(fish_temp_iucn)
 
 # nrow()
@@ -390,23 +388,70 @@ Null hypothesis: water temperature has zero correlation with fish diversity
 Alternative hypothesis: water temperature is correlated with fish diversity
 
 
+Shannon or Shannon–Weaver (or Shannon–Wiener) index is defined as $H' = - \sum_{i} log_{b} p_{i} $, where $p_{i}$ is the proportional abundance of species $i$ and $b$ is the base od the logarithm. It is most popular to use natural logarithms, but some argue for base $b = 2$ (which makese sense, but no real difference).
+
+The diversity function can find the total (or gamma) diversity of pooled communities with argument groups. The average alpha diversity can be found as the mean of diversities by the same groups, and their difference or ratio is an estimate of beta diversity (see Examples). The pooling can be based either on the observed abundancies, or all communities can be equalized to unit total before pooling; see Jost (2007) for discussion. Functions adipart and multipart provide canned alternatives for estimating alpha, beta and gamma diversities in hierarchical settings.
+
+None of these diversity indices is usable for empty sampling units without any species, but some of the indices can give a numeric value. Filtering out these cases is left for the user.
+
+
 
 ```{r diversity}
 fish_diversity_df <- fish_temp_iucn |> 
-  select(date, site, count, temp_c, scientific_name, common_name, time, redlist_category, population_trend) |> 
-  mutate(year = lubridate::year(date)) |> 
-  relocate(year, .before = site) |> 
-  select(-date, -time) |> 
-  group_by(year, site, temp_c)
-#|> 
- # summarize(crit = sum(count))
+  select(year, site, count, temp_c, scientific_name, common_name, redlist_category, population_trend) |> 
+  group_by(year, site)
 
 fish_diversity <- fish_diversity_df |> 
   summarize(index = vegan::diversity(count, index = "shannon"))
 
 head(fish_diversity)
 
-summary(lm(formula = index~temp_c))
+
+# get average temperature per site over time (per year)
+```
+
+
+```{r avg-temps}
+
+avg_temps_fish <- fish_diversity_df |> 
+  summarize(avg_temp = round(mean(temp_c, na.rm = TRUE), 3)) 
+
+avg_temps_subset <- avg_temps_fish |> 
+  filter(!site %in% c("AHND", "SCTW" ))
+
+
+carp_temps <- avg_temps_fish |> 
+  filter(site == "CARP")
+
+napl_temps <- avg_temps_fish |> 
+  filter(site == "NAPL")
+
+ivee_temps <- avg_temps_fish |> 
+  filter(site == "IVEE")
+
+mohk_temps <- avg_temps_fish |> 
+  filter(site == "MOHK")
+
+aque_temps <- avg_temps_fish |> 
+  filter(site == "AQUE")
+
+golb_temps <- avg_temps_fish |> 
+  filter(site == "GOLB")
+
+
+agg_avg_temps_plot <- ggplot() +
+  geom_line(data = carp_temps,
+            aes(x = year, y = avg_temp))
+
+
+avg_temp_subset_plot <- ggplot(data = avg_temps_subset) +
+  geom_line(aes(x = year, y = avg_temp)) +
+  facet_wrap(~site) +
+  theme_bw()
+
+avg_temp_subset_plot
+
+#summary(lm(formula = index ~ temp_c, data = fish_diversity))
 # take average for each year
 ```
 
@@ -415,12 +460,63 @@ summary(lm(formula = index~temp_c))
 2. site year temp -- average per site per year
 3. site year iucn status
 
-```{r}
-fish_diversity |> 
-  ggplot(aes(x = temp_c))
+```{r iucn-status-time}
+
+iucn_status <- fish_temp_iucn |> 
+  group_by(year, site, redlist_category) |> 
+#  pivot_wider(names_from = 'redlist_category', )
+#|> 
+  summarize(iucn_count = n()) 
+
+iucn_status$redlist_category <- factor(iucn_status$redlist_category,
+                                       levels = c("Critically Endangered",
+                                                  "Vulnerable",
+                                                  "Least Concern",
+                                                  "Data Deficient"))
+
+carp_iucn_trend <- iucn_status |> 
+  filter(site == "CARP")
+
+carp_iucn_trend |> ggplot() +
+  geom_jitter(aes(x = year, y = iucn_count,
+                  color = redlist_category),
+              alpha = 0.8) +
+    geom_line(aes(x = year, y = iucn_count,
+                  color = redlist_category)) +
+  scale_color_manual(limits = c("Critically Endangered",
+                                "Vulnerable",
+                                "Least Concern",
+                                "Data Deficient"),
+                     values = c("Critically Endangered"="red",
+                                "Vulnerable"="yellow",
+                                "Least Concern"="cornflowerblue",
+                                "Data Deficient"="grey")) +
+  theme_bw() +
+  labs(color = "IUCN Redist Status",
+       x = "Year",
+       y = "Count",
+       title = "Fish Population Demographics Over Time",
+       subtitle = "SBC LTER Carpenteria site"
+       )
+
+
+#summary(lm(formula = ))
+
+#legend_order <- levels(with(iucn_status, reorder(Labels, Percent)))
+# scale_fill_discrete(breaks=c('Critically Endangered', 'Vulnerable', 'Least Concern', 'Data Deficient'))
+# values=c("Critically Endangered"="red", "Vulnerable"="yellow","Least Concern"="lightblue","Data Deficient"="grey"))
 
 ```
 
+
+
+```{r demographics-over-time}
+
+status_temp_trend <- left_join(iucn_status, avg_temps_fish, by = "year", "site")
+status_temp_trend
+
+
+```
 
 
 
