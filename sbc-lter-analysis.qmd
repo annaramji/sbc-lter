@@ -439,8 +439,9 @@ golb_temps <- avg_temps_fish |>
 
 
 agg_avg_temps_plot <- ggplot() +
-  geom_line(data = carp_temps,
-            aes(x = year, y = avg_temp))
+  geom_line(data = avg_temps_fish,
+            aes(x = year, y = avg_temp)) 
+  
 ```
 
 
@@ -484,8 +485,11 @@ iucn_status |> ggplot() +
   geom_jitter(aes(x = year, y = iucn_count,
                   color = redlist_category),
               alpha = 0.8) +
-    geom_line(aes(x = year, y = iucn_count,
-                  color = redlist_category)) +
+  # geom_line(aes(x = year, y = iucn_count,
+  #               color = redlist_category)) +
+  geom_smooth(aes(x = year, y = iucn_count,
+                  color = redlist_category),
+              method = "lm", se = TRUE) +
   scale_color_manual(limits = c("Critically Endangered",
                                 "Vulnerable",
                                 "Least Concern",
@@ -511,8 +515,11 @@ carp_iucn_trend |> ggplot() +
   geom_jitter(aes(x = year, y = iucn_count,
                   color = redlist_category),
               alpha = 0.8) +
-    geom_line(aes(x = year, y = iucn_count,
-                  color = redlist_category)) +
+    geom_smooth(aes(x = year, y = iucn_count,
+                  color = redlist_category), method = "lm", se = TRUE) +
+
+   # geom_line(aes(x = year, y = iucn_count,
+   #              color = redlist_category)) +
   scale_color_manual(limits = c("Critically Endangered",
                                 "Vulnerable",
                                 "Least Concern",
@@ -521,15 +528,14 @@ carp_iucn_trend |> ggplot() +
                                 "Vulnerable"="yellow",
                                 "Least Concern"="cornflowerblue",
                                 "Data Deficient"="grey")) +
-  facet_wrap(~redlist_category) +
   theme_bw() +
+  facet_wrap(~redlist_category) +
   theme(strip.background = element_rect(fill = "transparent")) +
   labs(color = "IUCN Redist Status",
        x = "Year",
        y = "Count",
        title = "Fish Population Demographics Over Time",
-       subtitle = "SBC LTER Carpenteria site"
-       )
+       subtitle = "SBC LTER Carpenteria site")
 
 #carp_iucn_trend
 
