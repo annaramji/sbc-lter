@@ -412,7 +412,6 @@ head(fish_diversity)
 
 
 ```{r avg-temps}
-
 avg_temps_fish <- fish_diversity_df |> 
   summarize(avg_temp = round(mean(temp_c, na.rm = TRUE), 3)) 
 
@@ -442,18 +441,25 @@ golb_temps <- avg_temps_fish |>
 agg_avg_temps_plot <- ggplot() +
   geom_line(data = carp_temps,
             aes(x = year, y = avg_temp))
+```
 
 
+```{r avg-temps-plot}
 avg_temp_subset_plot <- ggplot(data = avg_temps_subset) +
   geom_line(aes(x = year, y = avg_temp)) +
   facet_wrap(~site) +
-  theme_bw()
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(x = "Average Temperature (C)",
+       y = "Year", 
+       title = "Annual Average Temperature Over Time",
+       subtitle = "at nine SBC LTER sites")
 
 avg_temp_subset_plot
 
-#summary(lm(formula = index ~ temp_c, data = fish_diversity))
-# take average for each year
 ```
+- note - biggest/strongest El Nino that California has ever experienced, between 2015 and 2016. Rise in ocean temperatures. 
+
 
 
 1.. site year index
@@ -474,6 +480,30 @@ iucn_status$redlist_category <- factor(iucn_status$redlist_category,
                                                   "Least Concern",
                                                   "Data Deficient"))
 
+iucn_status |> ggplot() +
+  geom_jitter(aes(x = year, y = iucn_count,
+                  color = redlist_category),
+              alpha = 0.8) +
+    geom_line(aes(x = year, y = iucn_count,
+                  color = redlist_category)) +
+  scale_color_manual(limits = c("Critically Endangered",
+                                "Vulnerable",
+                                "Least Concern",
+                                "Data Deficient"),
+                     values = c("Critically Endangered"="red",
+                                "Vulnerable"="yellow",
+                                "Least Concern"="cornflowerblue",
+                                "Data Deficient"="grey")) +
+  facet_wrap(~redlist_category) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(color = "IUCN Redist Status",
+       x = "Year",
+       y = "Count",
+       title = "Fish Population Demographics Over Time",
+       subtitle = "across all SBC LTER sites")
+
+
 carp_iucn_trend <- iucn_status |> 
   filter(site == "CARP")
 
@@ -491,7 +521,9 @@ carp_iucn_trend |> ggplot() +
                                 "Vulnerable"="yellow",
                                 "Least Concern"="cornflowerblue",
                                 "Data Deficient"="grey")) +
+  facet_wrap(~redlist_category) +
   theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent")) +
   labs(color = "IUCN Redist Status",
        x = "Year",
        y = "Count",
@@ -499,6 +531,7 @@ carp_iucn_trend |> ggplot() +
        subtitle = "SBC LTER Carpenteria site"
        )
 
+#carp_iucn_trend
 
 #summary(lm(formula = ))
 
@@ -510,11 +543,16 @@ carp_iucn_trend |> ggplot() +
 
 
 
+
 ```{r demographics-over-time}
 
-status_temp_trend <- left_join(iucn_status, avg_temps_fish, by = "year", "site")
+status_temp_trend <- inner_join(iucn_status, avg_temps_fish)
 status_temp_trend
 
+diversity_temp_trend <- inner_join(status_temp_trend, fish_diversity)
+diversity_temp_trend
+
+summary(lm(formula = index ~ avg_temp, data = diversity_temp_trend))
 
 ```
 
