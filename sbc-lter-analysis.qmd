@@ -40,7 +40,33 @@ Santa Barbara Coastal LTER, J.E. Byrnes, D.C. Reed, B.J. Cardinale, K.C. Cavanau
 # Context
 
 ## California Spiny Lobsters
+
+*Panulirus interruptus*
+
+
 https://cadivingnews.com/the-lifecycle-of-spiny-lobsters/
+
+(3.25 inches = 82.55 milimeters)
+
+
+El Niño
+Barnard, P., Hoover, D., Hubbard, D. et al. Extreme oceanographic forcing and coastal response due to the 2015–2016 El Niño. Nat Commun 8, 14365 (2017). https://doi.org/10.1038/ncomms14365
+
+
+California Department of Fish and Wildlife, Marine Species Portal : https://marinespecies.wildlife.ca.gov/california-spiny-lobster/true/
+
+California Department of Fish and Wildlife. 2019 California Spiny Lobster, *Panulirus interruptus*, Enhanced Status Report.
+
+Contributors: Jenny Hofmeister, Carlos Mireles, Julia Coates, Travis Buck, Tom Mason, Doug Neilson (2019)
+
+- Spiny lobsters mature at about 5 years of age, or 2.5-inch carapace length. They have a complex, 2-year reproductive cycle from mating to the settlement of juvenile lobsters. Fecundity increases with size, and females produce one brood of eggs per year.
+- 2.5 inches = 63.5 mm
+
+Paper commonly referenced to for size and age estimates at different life cycle stages of California Spiny Lobster:
+
+Engle J. M. (1979). Ecology and growth of juvenile California spiny lobster, panulirus interruptus (Randall) (Los Angeles, California, United States: University of Southern California).
+
+
 
 
 ### Importing libraries
@@ -115,6 +141,7 @@ lobster_size_plot <- lobster_subset |> ggplot() +
   geom_line(aes(x = year, y = avg_size,
                  color = site)) +
   # showing lobster size of sexual maturity 
+  geom_hline(yintercept = 63.5, linetype = "dashed", alpha = 0.5) + 
   geom_hline(yintercept = 82.55, linetype = "dashed", alpha = 0.5) + 
   geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 el nino
   facet_wrap(~site) +
@@ -132,6 +159,17 @@ lobster_size_plot <- lobster_subset |> ggplot() +
 lobster_size_plot
   
 ```
+Based on these plots and our early data exploration, I found it difficult to make any meaningful claims about lobster abundance over time, as it was so challenging to find a way to average counts per site over time. I tried doing total counts per site per year, total counts per site per day during August over time, and average count per site per year. I found that the average count per site per year made the most sense, but the "0" or non-sightings in each site were overwhelming. 
+
+Moving on to lobster size (carapace size, in mm), taking the average size per site per year showed much more interesting trends, with a significant dip in size coinciding with the 2015/2016 El Niño, which was the strongest over a 145 year record (Barnard et. al., 2017). 
+
+The lower dashed horizontal line indicates the average estimated size (and corresponding age) at which the California Spiny Lobster reaches sexual maturity: around 2.5 inches (63.5 mm), or 58mm and 5 years old for Males and 70 mm and roughly 7 years old for Females (California Department of Fish and Wildlife, 2019), (Lindberg 1955, in Engle 1979). 
+
+The higher dashed horizontal line indicates the minimum legal catch size: a carapace measuring 3.25 inches or 82.55 mm, or around 8-13 years old (estimated age range of 7-11 for Males, 8-13 for Females) (California Department of Fish and Wildlife, 2019). 
+
+This shows us that for the most part, on average, the Santa Barbara Coast LTER sites are somewhat of a haven for California Spiny lobsters in their first few of years of breeding. As this graph shows an *average* carapace size, and lobsters can vary significantly in size depending on their age, these research sites are likely home to a wide age and developmental stage range of lobsters.
+
+The vertical dotted line indicates the first year of the 2015-2016 El Niño. At all sites, there is a notable drop in average carapace length from 2014 to 2015. 
 
 
 
