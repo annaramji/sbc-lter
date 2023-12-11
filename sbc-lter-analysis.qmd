@@ -270,11 +270,11 @@ lobster_size_plot_august
   
 ```
 
-- Note the significant difference in slopes betwen year 2014 and 2015 data points for average carapace size (mm) at the AQUE study site between the September-inclusive and September-exclusive (August only) plots. There is also a subtle change at the IVEE study site between 2014 and 2015 bewteen the two average size plots as well. 
+- Note the significant difference in slopes between year 2014 and 2015 data points for average carapace size (mm) at the AQUE study site between the September-inclusive and September-exclusive (August only) plots. There is also a subtle change at the IVEE study site between 2014 and 2015 between the two average size plots as well. 
 
 ### Interpretation
 
-Based on these plots and our early data exploration, I found it difficult to make any meaningful claims about lobster abundance over time, as it was so challenging to find a way to average counts per site over time. I tried doing total counts per site per year, total counts per site per day during August over time, and average count per site per year. I found that the average count per site per year made the most sense, but the "0" or non-sightings in each site were overwhelming. 
+Based on these plots and our early data exploration, I found it difficult to make any meaningful claims about trends in lobster abundance over time, as it was so challenging to find a way to average counts per site over time, leaving us with a range from 0 to roughly 2.8, with the majority of the data falling between 0 and 2. I tried doing total counts per site per year, total counts per site per day during August over time, and average count per site per year. I found that the average count per site per year made the most sense, but the "0" or non-sightings in each site were overwhelming in the data. In order to make more statistically rigorous claims, I wanted to work with a larger sample size of non-zero data points.
 
 Moving on to lobster size (carapace length, in mm), taking the average size per site per year showed potentially more interesting trends. The vertical dotted line indicates the first year of the 2015-2016 El Niño. At all sites, there is a notable drop in average carapace length (mm) from 2014 to 2015, both including and excluding September 2014 data. This significant change in slope of the lines connecting data points for average carapace length coinciding with the 2015/2016 El Niño, which was the strongest over a 145 year record (Barnard et. al., 2017). During El Niño events, sea surface temperatures (SST) rise, and SST estimates can also serve as an indicator for coastal ocean temperature levels -- if SST is rising, the temperatures at the bottom of relatively shallow, coastal reef sites are likely rising as well. In some cases, depending on the thermocline (inverted or not) that a reef experiences, Sea Bottom Temperatures (SBT) can even be higher than SST (Florida Fish and Wildlife Conservation Commission). 
 
@@ -316,22 +316,42 @@ water_temp <- read_csv(water_temp_fp, na = c("-99999")) |>
   mutate("year" = lubridate::year(date), # adding columns to join by
          "month" = lubridate::month(date),  # and filter later on 
          "day" = lubridate::day(date)) # for possible later analysis
-
-
-# prepping water temp data to compare with lobster data
-
-# finding the average water temperatures in August (month = 8) per year per site
-# to directly compare to our Lobster data
-
-august_temps <- water_temp |> 
-  filter(month %in% c(8)) |> # select August temps
-  filter(site %in% c((unique(lobsters_all$site)))) |>  # selecting Lobster data study sites
-  group_by(year, site) |> 
-  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
 ```
 
 
-```{r water-temp-plot}
+```{r water-temp-subsets}
+# prepping water temp data to compare with lobster data
+
+# finding average August reef bottom temperatures across all sites over 
+# the full time range of our water dataset (2002-2022)
+allsites_aug_temps <- water_temp |> 
+  filter(month %in% c(8)) |> # select August temps
+  filter(site %in% c((unique(lobsters_all$site)))) |>  # selecting Lobster data study sites
+  group_by(year) |> 
+  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
+
+# finding the average water temperatures in August (month = 8) per site
+# in the same time range as our lobster data
+# to visually compare our trends per site per year
+
+august_temps <- water_temp |> 
+  filter(month %in% c(8)) |> # select August temps
+#  filter(year > 2011) |>  # selecting lobster data time range
+  # I took out this step because it made the plot axes contain 0.0, 0.5 numeric values
+  filter(site %in% c((unique(lobsters_all$site)))) |>  # selecting Lobster data study sites
+  group_by(year, site) |> 
+  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
+
+#august_temps
+#allsites_aug_temps
+
+#all_months_temps
+
+```
+
+
+```{r water-temp-plots}
+# plotting august temp trends per site, within our lobster data time range
 august_temp_trends <- ggplot(data = august_temps) +
   geom_point(aes(x = year, 
                  y = avg_temp,
@@ -344,14 +364,31 @@ august_temp_trends <- ggplot(data = august_temps) +
   facet_wrap(~site) +
   theme(strip.background = element_rect(fill = "transparent")) +
   labs(title = "Average Reef Bottom Temperatures in August Over Time",
-       subtitle = "Organized by selected SBC LTER study sites (2002-2022)", 
+       subtitle = "organized by selected SBC LTER study sites (2002-2022)", 
        x = "Year",
-       y = "Average Water Temperature (C)") +
+       y = "Average Temperature (C)") +
 #  annotate("text", x=2011, y=19, label="El Niño", angle=0) # label looks messy on faceted plot, but is worthwhile to add on individual site plots
-  theme(legend.position = "none")
+  theme(legend.position = "none") # we're coloring and facet wrapping by site, so a legend is redundant
 
 
 august_temp_trends 
+
+# making a subset to show selected year range
+allsites_aug_temp_plot <- ggplot(data = allsites_aug_temps) +
+  geom_point(aes(x = year, 
+                 y = avg_temp)) +
+  geom_line(aes(x = year, 
+                y = avg_temp)) +
+  geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 El Niño
+  theme_bw() +
+  labs(title = "Average Reef Bottom Temperatures in August Over Time",
+       subtitle = "across selected SBC LTER study sites (2002-2022)", 
+       x = "Year",
+       y = "Average Temperature (C)") +
+  annotate("text", x=2014, y=19, label="El Niño", angle=0) 
+
+
+allsites_aug_temp_plot 
 ```
 ### Interpretation 
 
@@ -442,6 +479,7 @@ Interpretation of `site` coefficients:
 
 - The intercept estimate is a fatalistically significant estimate, with a significance level of 0 being met in both regressions. 
 
+- In both regression summaries, we can see that the significance levels of 0.1 (no symbol) and 0.01 ('*' symbol) are not met for the rest of the coefficients if we round to the nearest relevant decimal place. If we do not round, then 
 
 
 
