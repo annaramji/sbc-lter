@@ -68,6 +68,9 @@ Engle J. M. (1979). Ecology and growth of juvenile California spiny lobster, pan
 
 
 
+### SBC LTER  long term kelp forest study sites
+
+
 
 ### Importing libraries
 
@@ -95,12 +98,15 @@ library(vegan) # for diversity index
 # using the package `here()`
 
 # setting the file path for our lobster abundance csv
-lobster_abundance_fp <- here("data", "lobsters", "knb-lter-sbc.77.9",  "Lobster_Abundance_All_Years_20230831.csv")
+lobster_abundance_fp <- here("data", "lobsters", "knb-lter-sbc.77.9",
+                             "Lobster_Abundance_All_Years_20230831.csv")
 
 # read in lobster abundance data from filepath
 lobster_abd <- read_csv(lobster_abundance_fp, na = c("-99999")) |> 
   clean_names() |> 
-  mutate("day" = lubridate::day(date))
+  mutate("day" = lubridate::day(date)) # adding a "day" column for possible analysis later on 
+
+# preliminary exploration shows us that the primary month that data was collected in is August (month == 8)
 
 # making a tidied subset, finding average count and size per year per site
 lobster_subset <- lobster_abd |> 
@@ -109,7 +115,7 @@ lobster_subset <- lobster_abd |>
   summarize(avg_count = round(mean(count, na.rm = TRUE), 3), 
             avg_size = round(mean(size_mm, na.rm = TRUE), 3))
 
-
+lobster_subset
 ```
 
 
@@ -212,7 +218,9 @@ august_temp_trends <- ggplot(data = august_temps) +
   labs(title = "Average Water Temperature in August over Time",
        subtitle = "Ocean bottom temperatures (C) at SBC LTER sites", 
        x = "Year",
-       y = "Average Water Temperature (C)")
+       y = "Average Water Temperature (C)") +
+  theme(legend.position = "none")
+
 
 august_temp_trends
 
@@ -220,7 +228,7 @@ august_temp_trends
 # make a lobster abundance-friendly water temperature subset 
 ## (narrow data before joining)
 
-temp_lobster_plots <- august_temp_trends
+#temp_lobster_plots <- august_temp_trends
 
 #head(water_temp)
 #tail(water_temp)
@@ -228,11 +236,49 @@ temp_lobster_plots <- august_temp_trends
 
 
 ```{r lobster_temp_join}
-#lobster_abd_temp <- left_join(lobster_abd, water_temp, by = c("date", "site")) |> 
-#  drop_na(temp_c)
+# let's join the lobster subset and our temperature trends data to investigate the relationship between average temperature and average lobster carapace size 
 
-#head(lobster_abd_temp)
+lobster_temps <- left_join(lobster_subset, # average size per site per year
+                           august_temps)
+
+# preliminary plot of the joined data
+lobster_temps_plot <- ggplot(data = lobster_temps) + 
+  geom_jitter(aes(x = avg_temp,
+                  y = avg_size)) +
+  theme_bw() +
+  labs(title = "Average lobster size by average water temperature", 
+       subtitle = "California Spiny Lobsters, temperature taken at kelp forest bottoms, (C)", 
+       x = "Average Temperature (C)",
+       y = "Average Carapace Length (mm)")
+
+# view plot
+lobster_temps_plot
+
+
+# ungrouping by site to find average size and temperature per year across all sites
+lobster_yrly_averages <- lobster_temps |> 
+  select()
+
+# run multiple linear regression on temp and size 
+lobster_temp_reg <- lm(formula = avg_size ~ avg_temp + site, data = lobster_temps)
+summary(lobster_temp_reg)
+
 ```
+Interpretation of these coefficients:
+
+- **Intercept:** at the Arroyo Quemado Reef (site AQUE), our "dummy variable", when the temperature at the kelp forest floor ("bottom temperature") is 0 degrees Celsius, the expected lobster carapace size is 94.1 mm (nonsensical, from the SBC LTER records of reef bottom temperatures, which have been recorded every 15 minutes, ongoing since 2000, the minimum recorded temperature of all time in our data set is `r(min(water_temp$temp_c))` degrees Celsius). 
+- **Slope: `avg_temp`:** Holding `site` constant (comparing average lobster carapace lengths and average water temperatures only to those of the same SBC LTER study site), at the AQUE site, given a one unit change in average temperature (an increase of 1 degree Celsius), we expect the average carapace length of lobsters to change by `r cat(round(lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
+
+Interpretation of our `site` coefficients:
+
+- `siteCARP`: For the SBC LTER Carpenteria Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a  `r cat(round(lobster_temp_reg$coefficients['siteCARP'], 2))` mm increase in average lobster carapace size as compared to the AQUE site expected slope of -1.14 mm per 1 degree increase in Celsius, for a total expected change in average lobster carapace length of `r cat(round(lobster_temp_reg$coefficients['siteCARP'] + lobster_temp_reg$coefficients['avg_temp'], 2))` mm.   
+
+(moving forward, I will only describe the overall total expected change (`site___` + `avg_temp`)):
+
+- `siteIVEE`: For the SBC LTER Isla Vista Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 0.04 mm *increase* in average lobster carapace size. 
+- `siteMOHK`: For the SBC LTER Mohawk Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 2.48 mm *decrease* in average lobster carapace size.
+- `siteNAPL`: For the SBC LTER Naples Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 6.61 mm *increase* in average lobster carapace size.
+
 
 ```{r}
 # sum(is.na(lobster_abd_temp$temp_c))
