@@ -25,6 +25,12 @@ In this Quarto Document, I'll be working with data from the Santa Barbara Coast 
 
 Reed, D. and R. Miller. 2023. SBC LTER: Reef: Abundance, size and fishing effort for California Spiny Lobster (Panulirus interruptus), ongoing since 2012 ver 9. Environmental Data Initiative. https://doi.org/10.6073/pasta/3595322687af94cd532620ad9db94c77 (Accessed 2023-11-22).
 
+
+
+Notes on methods, limitations:
+
+transects were sampled by two SCUBA divers during daylight hours -- lobsters are most active at night
+
 ### Dataset 2: SBC LTER Reef: Bottom temperature data 
 
 Santa Barbara Coastal LTER, D. Reed, and R. Miller. 2023. SBC LTER: Reef: Bottom Temperature: Continuous water temperature, ongoing since 2000 ver 29. Environmental Data Initiative. https://doi.org/10.6073/pasta/3071d4179516b5ae56018bfa03fea9dd (Accessed 2023-12-03).
@@ -360,6 +366,10 @@ august_temp_trends <- ggplot(data = august_temps) +
                 y = avg_temp,
                 color = site)) +
   geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 El Niño
+  scale_x_continuous(minor_breaks = seq(2002,2022,by=1)#,
+                    # breaks = seq(2002,2022,by=5)
+                    ) +
+
   theme_bw() +
   facet_wrap(~site) +
   theme(strip.background = element_rect(fill = "transparent")) +
@@ -379,7 +389,9 @@ allsites_aug_temp_plot <- ggplot(data = allsites_aug_temps) +
                  y = avg_temp)) +
   geom_line(aes(x = year, 
                 y = avg_temp)) +
-  geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 El Niño
+  geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 El Niño 
+  scale_x_continuous(breaks = (seq(2000,2022, by = 5)), 
+                     minor_breaks = seq(2002, 2022, by = 1)) +
   theme_bw() +
   labs(title = "Average Reef Bottom Temperatures in August Over Time",
        subtitle = "across selected SBC LTER study sites (2002-2022)", 
@@ -412,7 +424,7 @@ Niño
 # joining our lobster data subsets and our temperature trends data to investigate the relationship between average temperature and average lobster carapace size 
 
 # august-only
-lobster_temps_august <- left_join(lobsters_august, 
+lobster_temps_august <- inner_join(lobsters_august, 
                            august_temps)
 
 
@@ -441,10 +453,13 @@ lobster_temps_august_plot <- ggplot(data = aug_lobs_lm_selection,
                              aes(x = avg_temp,
                                  y = avg_size)) + 
   geom_jitter(alpha = 0.7) +
-  geom_smooth(position = "jitter",
-    method='lm', formula= y ~ x, na.rm = TRUE
-              #, color="lightcoral", se=T, size=1.5
-              ) +
+  geom_smooth(method='lm',
+              formula= y~x,
+              na.rm = TRUE,
+              color="seagreen",
+              se=TRUE) +
+  scale_x_continuous(expand = c(0,0), limits = c(14.5, 20)) +
+  scale_y_continuous(expand = c(0,0), limits = c(65, 94)) + 
   theme_bw() +
   labs(title = "Average Lobster Size by Average Reef Bottom Temperature", 
        subtitle = "SBC LTER data on California Spiny Lobster carapace length (mm), reef bottom temperatures (C)", 
@@ -452,7 +467,7 @@ lobster_temps_august_plot <- ggplot(data = aug_lobs_lm_selection,
        y = "Average Size (mm)")
 
 # view plots
-lobster_temps_plot
+lobster_temps_august_plot
 ```
 
 
@@ -522,7 +537,7 @@ summary(lobster_multi_reg)
 
 
 More stats:
-t-tests
+t-tests?
 
 ```{r t-test-lobster-temp}
 # ungrouping by site to find average size and temperature per year across all sites
@@ -551,12 +566,39 @@ summary(lm(avg_size ~ avg_temp, data = allsites_lobs_temp_aug))
 
 
 
-```{r aggregate-all}
+```{r hand-se-calc}
+n1 = ncbirths_complete %>% filter(habit == "nonsmoker") %>% count()
+n2 = ncbirths_complete %>% filter(habit == "smoker") %>% count()
+s1 = ncbirths_complete %>% filter(habit == "nonsmoker") %>% summarize(sd(weight, na.rm = TRUE))
+s2 = ncbirths_complete %>% filter(habit == "smoker") %>% summarize(sd(weight, na.rm = TRUE))
+SE = as.numeric(sqrt(s1^2/n1 + s2^2/n2))
+print(SE)
+```
+
+
+```{r hand-se-calc}
+lobster_temps_august
+
+lobster_august <- lobster_temps_august |> 
+  # mutate(mpa_status = case_when(
+  #   site %in% c("IVEE", "NAPL") ~ "TRUE",
+  #   
+  #                  ))
+  mutate(mpa_status = if_else(site %in% c("IVEE", "NAPL"), TRUE, FALSE))
+
+lobster_mpa_reg <- lm(formula = avg_size ~ avg_temp + site + mpa_status, data = lobster_august)
+summary(lobster_mpa_reg)
+
+```
+
+
+
+```{r}
+
 
 
 
 ```
-
 
 
 
