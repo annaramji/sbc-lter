@@ -144,6 +144,37 @@ lobster_abd <- read_csv(lobster_abundance_fp, na = c("-99999")) |>
 
 ```
 
+```{r}
+lobster_abd_dist <- ggplot(data = lobster_abd) +
+  geom_histogram(aes(x = count), fill = "seagreen") +
+  theme_bw() +
+  labs(title = "Distribution of Lobster Abundance",
+       subtitle = "SBC LTER CA Spiny Lobster observations in August (2012-2023)",
+       x = "Abundance",
+       y = "Count")
+
+lobster_abd_dist
+```
+
+
+```{r lobster-size-dist}
+# check to see if normally distributed
+
+lobster_size_dist <- ggplot(data = lobster_abd) +
+  geom_histogram(aes(x = size_mm), fill = "seagreen", color = "black") +
+  theme_bw() +
+  labs(title = "Distribution of California Spiny Lobster Size", 
+       subtitle = "SBC LTER CA data (2012-2023), size measured by carapace length (mm)",
+       x = "Carapace Length (mm)",
+       y = "Count"
+       )
+  
+  
+
+lobster_size_dist
+
+```
+
 **Preliminary exploration** shows us that the primary month that data was collected in is August (`month == 8`), with the exception of 1 year (2014) where data was collected at 2 sites in September (site `IVEE` (6 observations) and `AQUE` (72 observations)). It is important to note that for site `AQUE`, there was no data collected in 2014 in the month of August. As 2015 is an important year for our study (El Niño), it is important to have a baseline of lobster carapace size from the year before. Because this data collection began in 2012, leaving out the 2014 September data for the AQUE site would mean only have 2 years of precedent before the El Niño event.
 
 Due to the nature of lobster carapace size increasing over time (positive age-size relationship), if we include the 2014 September data for AQUE, we could get a falsely high "baseline" carapace size for that study site before the El Niño event, which could skew our results. 
@@ -325,6 +356,14 @@ water_temp <- read_csv(water_temp_fp, na = c("-99999")) |>
 ```
 
 
+```{r water-temp-dist}
+# check to see if normally distributed
+
+
+
+```
+
+
 ```{r water-temp-subsets}
 # prepping water temp data to compare with lobster data
 
@@ -430,7 +469,7 @@ lobster_temps_august <- inner_join(lobsters_august,
 
 
 # september-inclusive
-lobster_temps_all <- left_join(lobsters_all, 
+lobster_temps_all <- inner_join(lobsters_all, 
                            august_temps) # still using August temps data, not including all September temperature data
 
 
@@ -567,12 +606,12 @@ summary(lm(avg_size ~ avg_temp, data = allsites_lobs_temp_aug))
 
 
 ```{r hand-se-calc}
-n1 = ncbirths_complete %>% filter(habit == "nonsmoker") %>% count()
-n2 = ncbirths_complete %>% filter(habit == "smoker") %>% count()
-s1 = ncbirths_complete %>% filter(habit == "nonsmoker") %>% summarize(sd(weight, na.rm = TRUE))
-s2 = ncbirths_complete %>% filter(habit == "smoker") %>% summarize(sd(weight, na.rm = TRUE))
-SE = as.numeric(sqrt(s1^2/n1 + s2^2/n2))
-print(SE)
+# n1 = ncbirths_complete %>% filter(habit == "nonsmoker") %>% count()
+# n2 = ncbirths_complete %>% filter(habit == "smoker") %>% count()
+# s1 = ncbirths_complete %>% filter(habit == "nonsmoker") %>% summarize(sd(weight, na.rm = TRUE))
+# s2 = ncbirths_complete %>% filter(habit == "smoker") %>% summarize(sd(weight, na.rm = TRUE))
+# SE = as.numeric(sqrt(s1^2/n1 + s2^2/n2))
+# print(SE)
 ```
 
 
