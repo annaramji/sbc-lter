@@ -415,20 +415,36 @@ Niño
 lobster_temps_august <- left_join(lobsters_august, 
                            august_temps)
 
+
+
 # september-inclusive
 lobster_temps_all <- left_join(lobsters_all, 
                            august_temps) # still using August temps data, not including all September temperature data
+
+
+# subselection of our August subset for regression
+aug_lobs_lm_selection <- lobster_temps_august |> 
+  select(year, site, avg_size, avg_temp) |> 
+  group_by(year, site)
+
+# subselection including September data for regression
+all_lobs_lm_selection <- lobster_temps_all |> 
+  select(year, site, avg_size, avg_temp) |> 
+  group_by(year, site)
 
 ```
 
 
 ```{r lobster-temps-plots}
 # preliminary plot of the joined data
-lobster_temps_august_plot <- ggplot(data = lobster_temps_august, 
+lobster_temps_august_plot <- ggplot(data = aug_lobs_lm_selection, 
                              aes(x = avg_temp,
                                  y = avg_size)) + 
   geom_jitter(alpha = 0.7) +
-  geom_smooth(method='lm', formula= avg_size~avg_temp, color="lightcoral", se=T, size=1.5) +
+  geom_smooth(position = "jitter",
+    method='lm', formula= y ~ x, na.rm = TRUE
+              #, color="lightcoral", se=T, size=1.5
+              ) +
   theme_bw() +
   labs(title = "Average Lobster Size by Average Reef Bottom Temperature", 
        subtitle = "SBC LTER data on California Spiny Lobster carapace length (mm), reef bottom temperatures (C)", 
@@ -440,16 +456,16 @@ lobster_temps_plot
 ```
 
 
-```{r lobster-temps-regression}
-# run multiple linear regression on temp and size, taking temperature differences at each site into account
+```{r lobster-temps-simple-lm}
+# run simple linear regression on temp and size, taking temperature differences at each site into account
 
 # for august-only data
-lobster_temp_reg_august <- lm(formula = avg_size ~ avg_temp + site, data = lobster_temps_august)
+lobster_temp_reg_august <- lm(formula = avg_size ~ avg_temp + site, data = aug_lobs_lm_selection)
 summary(lobster_temp_reg_august)
 
 
 # for september-inclusive lobster data and august-only water temp data
-lobster_temp_reg <- lm(formula = avg_size ~ avg_temp + site, data = lobster_temps_all)
+lobster_temp_reg <- lm(formula = avg_size ~ avg_temp + site, data = all_lobs_lm_selection)
 summary(lobster_temp_reg)
 
 
@@ -484,25 +500,65 @@ Interpretation of `site` coefficients:
 
 
 
-```{r aggregate-all}
+The temperatures may vary by (and dependent on) site, so we'll incorporate this interaction term in our multiple regression next:
+
+
+```{r lobster-temp-multiple-reg}
+
+# run multiple linear regression on temp and size, taking temperature differences at each site into account
+
+# for august-only data
+lobster_multi_reg_august <- lm(formula = avg_size ~ avg_temp + site + avg_temp:site, data = lobster_temps_august)
+summary(lobster_multi_reg_august)
+
+
+# for september-inclusive lobster data and august-only water temp data
+lobster_multi_reg <- lm(formula = avg_size ~ avg_temp + site + avg_temp:site, data = lobster_temps_all)
+summary(lobster_multi_reg)
+
+
+
+```
+
+
+More stats:
+t-tests
+
+```{r t-test-lobster-temp}
 # ungrouping by site to find average size and temperature per year across all sites
-#lobster_yrly_averages <- lobster_temps |> 
- # select()
+lobster_yrly_averages <- lobster_subset_all |> # pre-summarized lobster data
+  ungroup() |> 
+  group_by(year) |> 
+  summarize(avg_size = mean(size_mm, na.rm = TRUE))
+
+lobster_yrly_averages_aug <- lobster_subset_august |> # pre-summarized lobster data, only August data
+  ungroup() |> 
+  group_by(year) |> 
+  summarize(avg_size = mean(size_mm, na.rm = TRUE))
+
+
+# I'll need to rejoin these subsets with the yearly average temperature across the 5 sites, but not grouped by site
+allsites_lobs_temp_aug <- left_join(lobster_yrly_averages_aug, allsites_aug_temps)
+head(allsites_lobs_temp) # we should no longer see a "site" column 
+
+
+
+summary(lm(avg_size ~ avg_temp, data = allsites_lobs_temp_aug))
+
+#t.test(avg_size ~ avg_temp, data = allsites_lobs_temp_aug)
+
+```
+
+
+
+```{r aggregate-all}
+
 
 
 ```
 
 
-```{r lobster_joined_group}
 
-lobster_summary <- lobster_abd_temp |> 
-  group_by(date, site) |> 
-  summarize(mean_temp = round(mean(temp_c, na.rm = TRUE), 3),
-            count = n())
-  
-lobster_summary
-
-```
 
 
 ```{r lobster_temp_reg}
@@ -886,7 +942,7 @@ carp_iucn_trend |> ggplot() +
        x = "Year",
        y = "Count",
        title = "Fish Population Demographics Over Time",
-       subtitle = "SBC LTER Carpenteria site")
+       subtitle = "SBC LTER Carpinteria site")
 
 #carp_iucn_trend
 
@@ -919,8 +975,8 @@ summary(lm(formula = index ~ avg_temp, data = diversity_temp_trend))
 
 ```{r food-web}
 
-food_web <- read_csv("data/food_web/knb-lter-sbc.56.4/byrnes_foodweb_table1.csv", na = c("-99999")) |> 
-  clean_names() 
+#food_web <- read_csv("data/food_web/knb-lter-sbc.56.4/byrnes_foodweb_table1.csv", na = c("-99999")) |> 
+#  clean_names() 
 
 
 ```
