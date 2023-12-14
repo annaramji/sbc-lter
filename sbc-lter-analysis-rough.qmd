@@ -809,7 +809,7 @@ summarize with shannon index https://rdrr.io/cran/vegan/man/diversity.html
 
 Null hypothesis: water temperature has zero correlation with fish diversity Alternative hypothesis: water temperature is correlated with fish diversity
 
-Shannon or Shannon--Weaver (or Shannon--Wiener) index is defined as \$H' = - \sum*{i} log*{b} p\_{i} \$, where $p_{i}$ is the proportional abundance of species $i$ and $b$ is the base od the logarithm. It is most popular to use natural logarithms, but some argue for base $b = 2$ (which makese sense, but no real difference).
+Shannon or Shannon--Weaver (or Shannon--Wiener) index is defined as \$H' = - \sum*{i} log\*{b} p\_{i} \$, where $p_{i}$ is the proportional abundance of species $i$ and $b$ is the base od the logarithm. It is most popular to use natural logarithms, but some argue for base $b = 2$ (which makese sense, but no real difference).
 
 The diversity function can find the total (or gamma) diversity of pooled communities with argument groups. The average alpha diversity can be found as the mean of diversities by the same groups, and their difference or ratio is an estimate of beta diversity (see Examples). The pooling can be based either on the observed abundancies, or all communities can be equalized to unit total before pooling; see Jost (2007) for discussion. Functions adipart and multipart provide canned alternatives for estimating alpha, beta and gamma diversities in hierarchical settings.
 

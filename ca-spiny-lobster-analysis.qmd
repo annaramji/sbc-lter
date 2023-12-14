@@ -168,23 +168,12 @@ lobster_data <- read_csv("https://portal.edirepository.org/nis/dataviewer?packag
 lobster_size <- lobster_data %>% 
   clean_names() %>%  #  lower_snake_case column names
   # this dataset also has abundance, along with other information that we won't be using in our analysis. let's select what we're interested in:
+  mutate("month" = lubridate::month(date, label = FALSE)) %>% 
   select(year, month, date, site, size_mm) %>% 
   # filtering out NA values for size_mm 
   drop_na(size_mm)
   
-head(lobster_size, 3)
-
-```
-
-Note that the `year` and `month` columns are dtype <dbl> (double), rather than dates
-
-```{r}
-
-iv_2014 <- lobster_size %>% 
-  filter(site == "IVEE") %>% 
-  filter(year == 2014)
-
-nrow(iv_2014)
+head(lobster_size, 2) %>% gt()
 
 ```
 
@@ -194,17 +183,16 @@ Reef bottom temperature data:
 # this is a large file (372.8 MiB), so don't be alarmed if this step takes a while
 water_data <- read_csv("https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-sbc.13.29&entityid=d707a45a2cd6eee1d016d99844d537da")
 
-
-
-water_temp <- water_data %>% 
+water_data <- water_data %>% 
   clean_names() %>% 
-  rename("date" = date_local, "time" = time_local) |> # cleaning names
-  select(-serial, -time) %>% 
+  rename("date" = date_local) %>%  # cleaning names
   mutate("year" = lubridate::year(date), # adding columns to join by
-         "month" = lubridate::month(date)  # and filter later on
-         ) 
+         "month" = lubridate::month(date)) %>%   # and filter later on
+  select(year, month, date, site, temp_c)
+  
+  
+head(water_data, 2) %>% gt()
 
-head(water_temp)
 ```
 
 ### Preliminary plotting, data exploration
@@ -214,8 +202,25 @@ Let's check our data for normality to see what our options are in terms of analy
 ```{r lobster-size-dist}
 # check to see if normally distributed
 
-lobster_size_dist <- ggplot(data = lobster_abd) +
-  geom_histogram(aes(x = size_mm), fill = "seagreen", color = "black") +
+mean_size <- mean(lobster_size$size_mm)
+sd_size <- sd(lobster_size$size_mm)
+
+lobster_size_dist <- ggplot(data = lobster_size) +
+  geom_histogram(aes(x = size_mm),
+                 fill = "seagreen",
+                 color = "black",
+                 bins = 45) +
+  geom_vline(xintercept = mean_size,
+             linetype = "dashed",
+             color = "skyblue",
+             linewidth = 0.8,
+             size = 0.6) + 
+  geom_vline(xintercept = mean_size + (2 * sd_size),
+             linetype = "dotted",
+             size = 0.6) + 
+  geom_vline(xintercept = mean_size - (2 * sd_size),
+             linetype = "dotted",
+             size = 0.6) + 
   theme_bw() +
   labs(title = "Distribution of California Spiny Lobster Size", 
        subtitle = "SBC LTER CA data (2012-2023), size measured by carapace length (mm)",
@@ -227,8 +232,351 @@ lobster_size_dist
 
 ```
 
-This seems relatively normally distributed, with a right tail indicating several counts of higher values.
+The data appears relatively normally distributed, with a clear aggregation of the data around the mean (light blue, dashed line) and the bulk of the data within two standard deviations away from the mean (black dotted lines). There is also a right tail indicating several counts of higher values.
 
-### Works Cited:
+```{r temp-dist}
+# check to see if normally distributed
+mean_temp <- mean(water_data$temp_c)
+sd_temp <- sd(water_data$temp_c)
+
+temp_dist <- ggplot(data = water_data) +
+  geom_histogram(aes(x = temp_c),
+                 fill = "cornflowerblue",
+                 color = "black",
+                 bins = 45) +
+  geom_vline(xintercept = mean_temp,
+             linetype = "dashed",
+             linewidth = 1,
+             color = "darkturquoise",
+             size = 0.7) + 
+  geom_vline(xintercept = mean_temp + (2 * sd_temp),
+             linetype = "dotted",
+             size = 0.6) + 
+  geom_vline(xintercept = mean_temp - (2 * sd_temp),
+             linetype = "dotted",
+             size = 0.6) + 
+  theme_bw() +
+  labs(title = "Distribution of Reef bottom temperatures (ºC) (2002-2023)", 
+       subtitle = "at nine SBC LTER Reef sites ",
+       x = "Temperature (ºC)",
+       y = "Count")
+
+
+temp_dist
+
+
+```
+
+The data appears relatively normally distributed, with a clear aggregation to the slight left of the mean (blue dashed line) the bulk of the data falling within 2 standard deviations away from the mean (dotted black lines) . There is also a right tail and right skew.
+
+To know what we should do with our "outlier" September data records, let's see the number of data points that were collected in September at the two sites we know they were collected at.
+
+```{r sept-data}
+
+sept_data <- lobster_size %>% 
+  filter(month == 9) 
+
+# we can also see that the only year that size data was collected in was 2014
+#print(unique(sept_data$year))
+print(unique(sept_data$site))
+
+
+# finding proportion of IVEE data collected in September, 2014
+iv_2014 <- lobster_size %>% 
+  filter(site == "IVEE",
+         year == 2014) 
+
+iv_sept <- iv_2014 %>% filter(month == 9) 
+iv_sept_pct <- nrow(iv_sept) / nrow(iv_2014) * 100
+
+
+# we can also see that all of site AQUE's data in 2014 was collected in September:
+aq_2014 <- lobster_size %>% 
+  filter(site == "AQUE",
+         year == 2014)
+
+aq_sept <- aq_2014 %>% filter(month == 9) 
+aq_sept_pct <- nrow(aq_sept) / nrow(aq_2014) * 100
+
+
+print(paste0("The September data records account for ", round(iv_sept_pct, 2), "% of IVEE Reef's 2014 data points"))
+print(paste0("The September data records account for ", round(aq_sept_pct, 3), "% of AQUE Reef's 2014 data points"))
+
+```
+
+**Preliminary exploration** shows us that the primary month that data was collected in is August (`month == 8`), with the exception of AQUE and IVEE study sites in 2014, where data was collected in September (site `IVEE` (around 5% of the site's 2014 observations) and `AQUE` (100% of the site's 2014 observations)).
+
+As 2015 is an important year for our study (El Niño), it is important to have a baseline of lobster carapace size from the year before. Because this data collection began in 2012, leaving out the 2014 September data for the AQUE site would mean only have 2 years of precedent before the El Niño event. Having only
+
+Due to the nature of lobster carapace size increasing over time (positive age-size relationship), if we include the 2014 September data for AQUE, we could get a falsely high "baseline" carapace size for that study site before the El Niño event, which could skew our results. An additional concern I have is about how our average Reef bottom temperature data will interact in all of this. Sea surface temperatures fluctuate over time and both seasonal variation and wind levels can impact ocean temperatures on the California Coast (Mendessohn et. al., 2004, Castelao and Wang, 2014).
+
+Another issue that comes up with excluding 2014 data for the AQUE study site is that in all other sites, the avereage carapace size (mm) was greater in 2014 than in 2013. This could mean that by excluding 2014 data for the AQUE study site, in our attempt to avoid a falsely high baseline/comparison point, we are obtaining a falsely low one. If we include both months of 2014 data, the IVEE study site is also skewed to have higher average carapace sizes for that year, as I'll show later.
+
+We have a few options here. We could either limit our dataset to just August (`month == 8`) to get a more even and fairly comparable set of averages across sites in our data, or include the September data and continue on with our analysis, keeping this discrepancy in mind. Another option is to make two subsets, one of just August data, and another of all of our data, and run our regression and analyses on both separately. We could also make an estimate of what we'd expect the average carapace length to be in August, 2014 for site AQUE and not include the September data for AQUE or IVEE. Another option would be to omit site AQUE from our analysis, and exclude the September data from site IVEE.
+
+Thus, in this analysis, I will make two subsets: one in which we keep all of our data (denoted in our outputs as August data and August & September data), and the other will only include data collected in August. We can compare the results of our statistical analyses as we go.
+
+## Averages
+
+### Making subsets, taking ~~names~~ means
+
+First, we'll make two subsets (August vs. August & September) and then we'll plot the average carapace lengths over time, grouped by site,
+
+```{r lobster-subsets}
+# making a tidied subset, finding average count and size per year per site
+
+# keeping data from August and September
+lobster_all <- lobster_size %>% 
+  group_by(year, site) %>% 
+  summarize(avg_size = mean(size_mm, na.rm = TRUE),
+            max_size = max(size_mm, na.rm = TRUE), 
+            min_size = min(size_mm, na.rm = TRUE))
+
+# keeping August data only
+lobster_august <- lobster_size %>%  
+  filter(month(date) == 8) %>% 
+  group_by(year, site) %>% 
+  summarize(avg_size = mean(size_mm, na.rm = TRUE),
+            max_size = max(size_mm, na.rm = TRUE), 
+            min_size = min(size_mm, na.rm = TRUE))
+```
+
+
+:::panel-tabset
+
+####August & September
+```{r lobster-avg-plot-all}
+# plot average lobster size per site per year, including September data
+lobster_size_plot_all <- lobster_all %>%  ggplot() + 
+  geom_point(aes(x = year, y = avg_size,
+                 color = site)) +
+  geom_line(aes(x = year, y = avg_size,
+                 color = site)) +
+  # carapace length at sexual maturity 
+  geom_hline(yintercept = 63.5,
+             linetype = "dashed",
+             alpha = 0.6) + 
+  # catch length
+  geom_hline(yintercept = 82.55,
+             linetype = "dashed",
+             alpha = 0.6) + 
+  # 2015 El Niño
+  geom_vline(xintercept = 2015,
+             linetype = "dotted") + 
+  facet_wrap(~site) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(
+    #color = "Site",
+       x = "Year",
+       y = "Carapace Length (mm)",
+       title = "Annual average Spiny Lobster carapace length (2012-2023)",
+       subtitle = "organized by SBC LTER study site") +
+  theme(legend.position = "none")
+
+
+lobster_size_plot_all
+```
+
+#### August
+```{r lobster-avg-plot-august}
+# plot average lobster size per site per year
+lobster_size_plot_august <- lobster_august %>%  ggplot() + 
+  geom_point(aes(x = year, y = avg_size,
+                 color = site)) +
+  geom_line(aes(x = year, y = avg_size,
+                 color = site)) +
+  # showing lobster size of sexual maturity 
+  geom_hline(yintercept = 63.5, linetype = "dashed", color = "dimgrey", alpha = 0.5) + 
+  geom_hline(yintercept = 82.55, linetype = "dashed", alpha = 0.5) + 
+  geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 El Niño
+  facet_wrap(~site) +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(
+    #color = "Site",
+       x = "Year",
+       y = "Average Size (mm)",
+       title = "Annual average Spiny Lobster carapace length (2012-2023)",
+       subtitle = "organized by SBC LTER study site, data collected in August only") +
+  theme(legend.position = "none")
+
+lobster_size_plot_august
+
+```
+
+- The vertical dotted line indicates the first year of the 2015-2016 El Niño
+
+- The lower dashed horizontal line indicates the average estimated size (and corresponding age) at which the California Spiny Lobster reaches sexual maturity: around 2.5 inches (63.5 mm), or 58mm and 5 years old for Males and 70 mm and roughly 7 years old for Females (California Department of Fish and Wildlife, 2019), (Lindberg 1955, in Engle 1979).
+
+- The higher dashed horizontal line indicates the minimum legal catch size: a carapace measuring 3.25 inches or 82.55 mm, or around 8-13 years old (estimated age range of 7-11 for Males, 8-13 for Females) (California Department of Fish and Wildlife, 2019).
+
+#### Interpretation
+
+-   Note the significant difference in slopes between year 2014 and 2015 data points for average carapace size (mm) at the AQUE study site between the September-inclusive and September-exclusive (August only) plots. There is also a subtle change at the IVEE study site between 2014 and 2015 between the two plots as well, supporting what we know about how carapace lengths increase over time, even on a monthly level.  
+
+
+Taking the average size (carpace length) per site per year showed potentially interesting trends. At all sites, there is a notable drop in average carapace length (mm) from 2014 to 2015, both including and excluding September 2014 data. This significant change in slope of the lines connecting data points for average carapace length coincides with the 2015/2016 El Niño, which was the strongest over a 145 year record (Barnard et. al., 2017). During El Niño events, sea surface temperatures (SST) rise, and SST estimates can also serve as an indicator for coastal ocean temperature levels -- if SST is rising, the temperatures at the bottom of relatively shallow, coastal reef sites are likely rising as well. In some cases, depending on the thermocline (inverted or not) that a reef experiences, Sea Bottom Temperatures (SBT) can even be higher than SST (Florida Fish and Wildlife Conservation Commission).
+
+
+These visualizations suggests that the Santa Barbara Coast LTER sites are somewhat of a haven for California Spiny lobsters in their first few of years of breeding, as stated on the CADFW info page on the California Spiny lobster. As this graph shows an *average* carapace size, and lobsters can vary significantly in size depending on their age, these research sites are likely home to a wide age and developmental stage range of lobsters.
+
+
+Let's move on to incorporate the other essential data in investigating the relationship between reef bottom temperatures and average lobster size (carapace length, mm), -- Reef bottom temperature!
+
+
+
+### Average reef bottom temperature over time
+
+Our reef bottom temperature data is pretty huge -- temperatures were recorded every 15 minutes at multiple SBC LTER study sites since 2002.
+
+Regarding our previous dilemma of "to include or not to include" September carapace length data, we now have an opportunity to decide how we want to aggregate our reef bottom temperature data. I could filter it by month, keeping temperature records only from the month of August, or I could include September as well. I could also have another different subset, which incorporates temperature data from August and September only at sites IVEE and AQUE for 2014, and filter it to only keep August dates for all other sites that year and all sites at all years. This can get pretty complicated pretty quickly, as the easiest inclusive option -- filtering just for August and September -- has the drawback of interfering with the estimated relationship between average carapace length and water temperature for the majority of our data.
+
+In my analysis, I've decided to only select reef bottom temperature records in the month of August, which I then average and join with the lobster data by year and by site. 
+
+First, we'll plot the average August reef bottom temperature per year across all sites, noting the spike in temperature in the first year of the 2015/2016 El Niño. This dataset ranges from 2002 to 2023, but the last month of the record is July, so we'll have August data spanning from 2002-2023 before we join it with our lobster data set. Then, we'll plot the average August temperatures over time by site, comparing with the average size by site plot created earlier.
+
+```{r water-avg plot}
+
+# prepping water temp data to compare with lobster data
+
+# finding average August reef bottom temperatures across all sites over 
+# the full time range of our water dataset (2002-2022)
+allsites_aug_temps <- water_data %>% 
+  filter(month %in% c(8)) |> # select August temps
+  filter(site %in% c((unique(lobster_size$site)))) %>% # selecting Lobster data study sites
+  group_by(year) %>%  
+  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
+
+
+site_temps <- water_data %>%  
+  filter(month(date) %in% c(8)) %>%  # select August temps
+#  filter(year > 2011) |>  # selecting lobster data time range
+  # I took out this step because it made the plot axes contain 0.0, 0.5 numeric values
+  filter(site %in% c((unique(lobster_size$site)))) %>%   # selecting Lobster data study sites
+  group_by(year, site) %>%  
+  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
+
+
+august_temps <- water_data %>%
+  filter(site %in% c((unique(lobster_size$site)))) %>% 
+  filter(month == 8)
+
+mean_aug_temp <- mean(august_temps$temp_c)
+
+print(paste0("The average August reef bottom temperature across the 5 reef study sites from 2002-2022 is ", round(mean_aug_temp, 2), "ºC."))
+```
+
+
+```{r water-temp-plot}
+# making a subset to show selected year range
+allsites_aug_temp_plot <- ggplot(data = allsites_aug_temps) +
+  geom_point(aes(x = year, 
+                 y = avg_temp)) +
+  geom_line(aes(x = year, 
+                y = avg_temp)) +
+  geom_vline(xintercept = 2015,  linetype = "dotted") + # showing 2015 El Niño 
+  scale_x_continuous(breaks = (seq(2000,2022, by = 5)), 
+                     minor_breaks = seq(2002, 2022, by = 1)) +
+  theme_bw() +
+  labs(title = "Average Reef Bottom Temperatures in August Over Time",
+       subtitle = "across selected SBC LTER study sites (2002-2022)", 
+       x = "Year",
+       y = "Average Temperature (C)") +
+  annotate("text", x=2014, y=19, label="El Niño", angle=0) 
+
+
+allsites_aug_temp_plot
+```
+
+There is a clear spike in average reef bottom temperature in August of 2015 across all study sites, and a significant dip in 2010. There is also a notable spike (and maximum peak) at all sites in 2018. There were record-breaking SST anomalies in 2018 at many points along the Southern California Coastline, particularly along La Jolla, San Diego, where the Scripps Institution of Oceanography recorded water temperatures of 25.9 degrees Celsius, beating the previous record of 25.8 C from 1931 (NASA Earth Observatory, 2018, Scripps Institution of Oceanography, 2018).
+
+
+Now we'll join the lobster size data and the temperature data, which will narrow our time range to 2012-2022.
+
+```{r lobster-temp-joins}
+lobster_temp_august_full <- inner_join(lobster_august, site_temps)
+
+lobster_temps <- lobster_temp_august_full %>% 
+  select(-max_size, -min_size)
+
+
+```
+
+
+:::panel-tabset
+
+####Avg. Temperatures
+
+```{r temp-site-plots}
+# plotting august temp trends per site, within our lobster data time range
+
+august_temp_trends <- ggplot(data = lobster_temps, aes(x = year, y = avg_temp)) +
+  geom_hline(yintercept = 16.19, 
+             linetype = "dashed", 
+             alpha = 0.6) + 
+  geom_vline(xintercept = 2015,
+             linetype = "dotted") + # showing 2015 El Niño
+  geom_point(aes(color = site)) +
+  geom_line(aes(color = site)) +
+
+  scale_x_continuous(minor_breaks = seq(2012,2022, by=1),
+                     breaks = seq(2012,2022, by=4)) +
+
+  theme_bw() +
+  facet_wrap(~site) +
+  theme(strip.background = element_rect(fill = "transparent")) +
+  labs(title = "Average Reef Bottom Temperatures in August Over Time",
+       subtitle = "organized by selected SBC LTER study sites (2012-2022)", 
+       x = "Year",
+       y = "Average Temperature (C)") +
+#  annotate("text", x=2011, y=19, label="El Niño", angle=0) # label looks messy on faceted plot, but is worthwhile to add on individual site plots
+  theme(legend.position = "none") # we're coloring and facet wrapping by site, so a legend is redundant
+
+
+august_temp_trends 
+
+```
+
+####Avg. Sizes
+
+```{r avg-size-plot-temp}
+
+lobster_size_plot_august
+
+```
+
+
+
+*The dotted vertical line in each graph once again shows the beginning of the 2015/2016 El Niño. The dashed horizontal lines in the temperature plots show the 20-year average August reef bottom temperature (from 2002-2022). The dashed horizontal lines in the average size plot show the carapace lengths at sexual maturity (lower) and catch size (higher).*
+
+
+
+Comparing our average temperature and average size plots side by side, there seems to be visual evidence for some trends or relationship between average temperature and average carapace length. At all sites, in 2015 when the average August temperature spikes, average carapace lengths decrease. At the Naples reef site, after the temperature spikes in 2018 and falls dramatically in 2019, we see a spike in average carapace length in 2019. As average August reef bottom temperatures continue to fall in 2020 in Naples, lower than the average temperature over the previous 8 years, the avereage carapace size seems to drop slightly at that site. The most extreme drops in average carapace length at sites Arroyo Quemado, Carpinteria, and Mohawk happen when the temperature spikes in 2015. When temperatures fall back down closer to the 20-year average August reef bottom temperature in 2016, the Arroyo Quemado reef site is the only site where average carapace lengths seem to recover within that annual cycle. Unfortunately, we are missing temperature data at the Mohawk reef site in 2017. Overall, there seem to be complexities in the population structures at all sites, with similar overall trends in average August reef bottom temperature.
+
+
+
+## Lobster size & reef temperature relationship
+
+With our current data, we can model the relationship between average carapace length (mm) in August with the following equation:
+
+$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
+Where
+- $\mu CL$ is the average carapace length, in millimeters, in August
+- $\beta_{0}$ is the intercept, or expected average carapace length, in millimeters
+
+### Plotting 
+
+
+
+
+
+
+
+
+
+
+
+## Works Cited:
 
 Bris, A. L., Pershing, A. J., Gaudette, J., Pugh, T. L., & Reardon, K. M. (2017). Multi-scale quantification of the effects of temperature on size at maturity in the American lobster (Homarus americanus ). Fisheries Research, 186, 397-406. doi:10.1016/j.fishres.2016.09.008
