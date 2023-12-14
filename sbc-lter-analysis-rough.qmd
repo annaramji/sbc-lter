@@ -5,8 +5,6 @@ format: html
 editor: visual
 ---
 
-
-
 ## Introduction
 
 In this Quarto Document, I'll be working with data from the Santa Barbara Coast LTER sites, analyzing data using statistical analysis methods covered in the Master of Environmental Data Science program's Environmental Data Science (EDS) 222: Statistics for Environmental Data Science course taught by Tamma Carleton (tcarleton\@ucsb.edu).
@@ -23,13 +21,11 @@ In this Quarto Document, I'll be working with data from the Santa Barbara Coast 
 
 Reed, D. and R. Miller. 2023. SBC LTER: Reef: Abundance, size and fishing effort for California Spiny Lobster (Panulirus interruptus), ongoing since 2012 ver 9. Environmental Data Initiative. https://doi.org/10.6073/pasta/3595322687af94cd532620ad9db94c77 (Accessed 2023-11-22).
 
-
-
 Notes on methods, limitations:
 
 transects were sampled by two SCUBA divers during daylight hours -- lobsters are most active at night
 
-### Dataset 2: SBC LTER Reef: Bottom temperature data 
+### Dataset 2: SBC LTER Reef: Bottom temperature data
 
 Santa Barbara Coastal LTER, D. Reed, and R. Miller. 2023. SBC LTER: Reef: Bottom Temperature: Continuous water temperature, ongoing since 2000 ver 29. Environmental Data Initiative. https://doi.org/10.6073/pasta/3071d4179516b5ae56018bfa03fea9dd (Accessed 2023-12-03).
 
@@ -39,15 +35,9 @@ Note: Depth of temperature logger at each site varies from 4.95 to 8.15 meters.
 
 Reed, D. and R. Miller. 2023. SBC LTER: Reef: Kelp Forest Community Dynamics: Fish abundance ver 38. Environmental Data Initiative. https://doi.org/10.6073/pasta/92003d368dfe121f6709ad1507412f66 (Accessed 2023-11-22)
 
-
-
 ### Dataset 4: Feeding relationships
 
 Santa Barbara Coastal LTER, J.E. Byrnes, D.C. Reed, B.J. Cardinale, K.C. Cavanaugh, S.J. Holbrook, and R.J. Schmitt. 2022. SBC LTER: Reef: Feeding relationships for kelp forest species ver 4. Environmental Data Initiative. https://doi.org/10.6073/pasta/e82a082f4440d469c84e11a265266004 (Accessed 2023-11-22).
-
-
-
-
 
 # Context
 
@@ -55,16 +45,13 @@ Santa Barbara Coastal LTER, J.E. Byrnes, D.C. Reed, B.J. Cardinale, K.C. Cavanau
 
 *Panulirus interruptus*
 
-[include images of males vs. females]
+\[include images of males vs. females\]
 
 https://cadivingnews.com/the-lifecycle-of-spiny-lobsters/
 
 (3.25 inches = 82.55 milimeters)
 
-
-El Niño
-Barnard, P., Hoover, D., Hubbard, D. et al. Extreme oceanographic forcing and coastal response due to the 2015–2016 El Niño. Nat Commun 8, 14365 (2017). https://doi.org/10.1038/ncomms14365
-
+El Niño Barnard, P., Hoover, D., Hubbard, D. et al. Extreme oceanographic forcing and coastal response due to the 2015--2016 El Niño. Nat Commun 8, 14365 (2017). https://doi.org/10.1038/ncomms14365
 
 California Department of Fish and Wildlife, Marine Species Portal : https://marinespecies.wildlife.ca.gov/california-spiny-lobster/true/
 
@@ -72,20 +59,16 @@ California Department of Fish and Wildlife. 2019 California Spiny Lobster, *Panu
 
 Contributors: Jenny Hofmeister, Carlos Mireles, Julia Coates, Travis Buck, Tom Mason, Doug Neilson (2019)
 
-- Spiny lobsters mature at about 5 years of age, or 2.5-inch carapace length. They have a complex, 2-year reproductive cycle from mating to the settlement of juvenile lobsters. Fecundity increases with size, and females produce one brood of eggs per year.
-- 2.5 inches = 63.5 mm
+-   Spiny lobsters mature at about 5 years of age, or 2.5-inch carapace length. They have a complex, 2-year reproductive cycle from mating to the settlement of juvenile lobsters. Fecundity increases with size, and females produce one brood of eggs per year.
+-   2.5 inches = 63.5 mm
 
 Paper commonly referenced to for size and age estimates at different life cycle stages of California Spiny Lobster:
 
 Engle J. M. (1979). Ecology and growth of juvenile California spiny lobster, panulirus interruptus (Randall) (Los Angeles, California, United States: University of Southern California).
 
-
-### SBC LTER  long term kelp forest study sites
-
+### SBC LTER long term kelp forest study sites
 
 Full name for all sites covered in this study (primarily Lobster sites), images of where the sites are located
-
-
 
 ### Importing libraries
 
@@ -116,7 +99,6 @@ library(sjPlot)
 
 
 ```
-
 
 # Reading in the Data
 
@@ -155,7 +137,6 @@ lobster_abd_dist <- ggplot(data = lobster_abd) +
 lobster_abd_dist
 ```
 
-
 ```{r lobster-size-dist}
 # check to see if normally distributed
 
@@ -176,17 +157,15 @@ lobster_size_dist
 
 **Preliminary exploration** shows us that the primary month that data was collected in is August (`month == 8`), with the exception of 1 year (2014) where data was collected at 2 sites in September (site `IVEE` (6 observations) and `AQUE` (72 observations)). It is important to note that for site `AQUE`, there was no data collected in 2014 in the month of August. As 2015 is an important year for our study (El Niño), it is important to have a baseline of lobster carapace size from the year before. Because this data collection began in 2012, leaving out the 2014 September data for the AQUE site would mean only have 2 years of precedent before the El Niño event.
 
-Due to the nature of lobster carapace size increasing over time (positive age-size relationship), if we include the 2014 September data for AQUE, we could get a falsely high "baseline" carapace size for that study site before the El Niño event, which could skew our results. 
+Due to the nature of lobster carapace size increasing over time (positive age-size relationship), if we include the 2014 September data for AQUE, we could get a falsely high "baseline" carapace size for that study site before the El Niño event, which could skew our results.
 
-We have a few options here. We could either limit our dataset to just August (`month == 8`) to get a more even and fairly comparable set of averages across sites in our data, or include the September data and continue on with our analysis, keeping this discrepancy in mind. Another option is to make two subsets, one of just August data, and another of all of our data, and run our regression and analyses on both separately. A fourth option would be to run multiple regression, including the relationship between month and carapace size as an interaction term. This would look something like `lm(size_mm ~ temp_c + size_mm * month)` , but this includes putting the dependent variable (y, or in our case, size_mm) in the interaction term. 
+We have a few options here. We could either limit our dataset to just August (`month == 8`) to get a more even and fairly comparable set of averages across sites in our data, or include the September data and continue on with our analysis, keeping this discrepancy in mind. Another option is to make two subsets, one of just August data, and another of all of our data, and run our regression and analyses on both separately. A fourth option would be to run multiple regression, including the relationship between month and carapace size as an interaction term. This would look something like `lm(size_mm ~ temp_c + size_mm * month)` , but this includes putting the dependent variable (y, or in our case, size_mm) in the interaction term.
 
 Another issue that comes up with excluding 2014 data for the AQUE study site is that in all other sites, the avereage carapace size (mm) was greater in 2014 than in 2013. This could mean that by excluding 2014 data for the AQUE study site, in our attempt to avoid a falsely high baseline/comparison point, we are obtaining a falsely low one. If we include both months of 2014 data, the IVEE study site may also be skewed to have higher average carapace sizes for that year, as there are 6 data points from September 2014 at the IVEE study site.
 
 An additional concern I have is about how our average Reef bottom temperature data will interact in all of this. Sea surface temperatures fluctuate over time and both seasonal variation and wind levels can impact ocean temperatures on the California Coast (Mendessohn et. al., 2004, Castelao and Wang, 2014).
 
-Overall, I think it makes the most sense to make two subsets -- one in which we keep all of our data, and the other will only include data collected in August. We can compare the results of our statistical analyses as we go. 
-
-
+Overall, I think it makes the most sense to make two subsets -- one in which we keep all of our data, and the other will only include data collected in August. We can compare the results of our statistical analyses as we go.
 
 ```{r lobster_data}
 # making a tidied subset, finding average count and size per year per site
@@ -230,8 +209,7 @@ head(lobsters_all |> filter(year == 2014))
 
 ```
 
-Note the differences in average size in IVEE between our years including and excluding September data (roughly 75.58 mm excluding September data, and roughly 76.24 mm including September data). The maximum and minimum size, however, remain unchanged for that site. 
-
+Note the differences in average size in IVEE between our years including and excluding September data (roughly 75.58 mm excluding September data, and roughly 76.24 mm including September data). The maximum and minimum size, however, remain unchanged for that site.
 
 Let's plot some of this data!
 
@@ -306,39 +284,31 @@ lobster_size_plot_august
   
 ```
 
-- Note the significant difference in slopes between year 2014 and 2015 data points for average carapace size (mm) at the AQUE study site between the September-inclusive and September-exclusive (August only) plots. There is also a subtle change at the IVEE study site between 2014 and 2015 between the two average size plots as well. 
+-   Note the significant difference in slopes between year 2014 and 2015 data points for average carapace size (mm) at the AQUE study site between the September-inclusive and September-exclusive (August only) plots. There is also a subtle change at the IVEE study site between 2014 and 2015 between the two average size plots as well.
 
 ### Interpretation
 
 Based on these plots and our early data exploration, I found it difficult to make any meaningful claims about trends in lobster abundance over time, as it was so challenging to find a way to average counts per site over time, leaving us with a range from 0 to roughly 2.8, with the majority of the data falling between 0 and 2. I tried doing total counts per site per year, total counts per site per day during August over time, and average count per site per year. I found that the average count per site per year made the most sense, but the "0" or non-sightings in each site were overwhelming in the data. In order to make more statistically rigorous claims, I wanted to work with a larger sample size of non-zero data points.
 
-Moving on to lobster size (carapace length, in mm), taking the average size per site per year showed potentially more interesting trends. The vertical dotted line indicates the first year of the 2015-2016 El Niño. At all sites, there is a notable drop in average carapace length (mm) from 2014 to 2015, both including and excluding September 2014 data. This significant change in slope of the lines connecting data points for average carapace length coinciding with the 2015/2016 El Niño, which was the strongest over a 145 year record (Barnard et. al., 2017). During El Niño events, sea surface temperatures (SST) rise, and SST estimates can also serve as an indicator for coastal ocean temperature levels -- if SST is rising, the temperatures at the bottom of relatively shallow, coastal reef sites are likely rising as well. In some cases, depending on the thermocline (inverted or not) that a reef experiences, Sea Bottom Temperatures (SBT) can even be higher than SST (Florida Fish and Wildlife Conservation Commission). 
+Moving on to lobster size (carapace length, in mm), taking the average size per site per year showed potentially more interesting trends. The vertical dotted line indicates the first year of the 2015-2016 El Niño. At all sites, there is a notable drop in average carapace length (mm) from 2014 to 2015, both including and excluding September 2014 data. This significant change in slope of the lines connecting data points for average carapace length coinciding with the 2015/2016 El Niño, which was the strongest over a 145 year record (Barnard et. al., 2017). During El Niño events, sea surface temperatures (SST) rise, and SST estimates can also serve as an indicator for coastal ocean temperature levels -- if SST is rising, the temperatures at the bottom of relatively shallow, coastal reef sites are likely rising as well. In some cases, depending on the thermocline (inverted or not) that a reef experiences, Sea Bottom Temperatures (SBT) can even be higher than SST (Florida Fish and Wildlife Conservation Commission).
 
+The lower dashed horizontal line indicates the average estimated size (and corresponding age) at which the California Spiny Lobster reaches sexual maturity: around 2.5 inches (63.5 mm), or 58mm and 5 years old for Males and 70 mm and roughly 7 years old for Females (California Department of Fish and Wildlife, 2019), (Lindberg 1955, in Engle 1979).
 
-The lower dashed horizontal line indicates the average estimated size (and corresponding age) at which the California Spiny Lobster reaches sexual maturity: around 2.5 inches (63.5 mm), or 58mm and 5 years old for Males and 70 mm and roughly 7 years old for Females (California Department of Fish and Wildlife, 2019), (Lindberg 1955, in Engle 1979). 
-
-The higher dashed horizontal line indicates the minimum legal catch size: a carapace measuring 3.25 inches or 82.55 mm, or around 8-13 years old (estimated age range of 7-11 for Males, 8-13 for Females) (California Department of Fish and Wildlife, 2019). 
+The higher dashed horizontal line indicates the minimum legal catch size: a carapace measuring 3.25 inches or 82.55 mm, or around 8-13 years old (estimated age range of 7-11 for Males, 8-13 for Females) (California Department of Fish and Wildlife, 2019).
 
 This shows us that for the most part, on average, the Santa Barbara Coast LTER sites are somewhat of a haven for California Spiny lobsters in their first few of years of breeding. As this graph shows an *average* carapace size, and lobsters can vary significantly in size depending on their age, these research sites are likely home to a wide age and developmental stage range of lobsters.
 
-
-
-
 Let's move on to incorporate the other essential data in investigating the relationship between reef bottom temperatures and average lobster size (carapace length, mm), -- Reef bottom temperature!
-
 
 ## Reef Bottom Temperature over time
 
+Our reef bottom temperature data is pretty huge -- temperatures were recorded every 15 minutes at multiple SBC LTER study sites since 2002.
 
-Our reef bottom temperature data is pretty huge -- temperatures were recorded every 15 minutes at multiple SBC LTER study sites since 2002. 
+Regarding our previous dilemma of "to include or not to include" September carapace length data, we now have an opportunity to decide how we want to aggregate our reef bottom temperature data. I could filter it by month, keeping temperature records only from the month of August, or I could include September as well. I could also have another different subset, which incorporates temperature data from August and September only at sites IVEE and AQUE for 2014, and filter it to only keep August dates for all other sites that year and all sites at all years. This can get pretty complicated pretty quickly, as the easiest inclusive option -- filtering just for August and September -- has the drawback of interfering with the estimated relationship between average carapace length and water temperature for the majority of our data.
 
+So, for this project, I'm going to
 
-Regarding our previous dilemma of "to include or not to include" September carapace length data, we now have an opportunity to decide how we want to aggregate our reef bottom temperature data. I could filter it by month, keeping temperature records only from the month of August, or I could include September as well. I could also have another different subset, which incorporates temperature data from August and September only at sites IVEE and AQUE for 2014, and filter it to only keep August dates for all other sites that year and all sites at all years. This can get pretty complicated pretty quickly, as the easiest inclusive option -- filtering just for August and September --  has the drawback of interfering with the estimated relationship between average carapace length and water temperature for the majority of our data. 
-
-So, for this project, I'm going to 
-
-
-After reading in the data, I perform some basic data cleaning steps and filter it down to 
+After reading in the data, I perform some basic data cleaning steps and filter it down to
 
 ```{r water-temp-data}
 # setting water temperature file path
@@ -354,14 +324,12 @@ water_temp <- read_csv(water_temp_fp, na = c("-99999")) |>
          "day" = lubridate::day(date)) # for possible later analysis
 ```
 
-
 ```{r water-temp-dist}
 # check to see if normally distributed
 
 
 
 ```
-
 
 ```{r water-temp-subsets}
 # prepping water temp data to compare with lobster data
@@ -392,7 +360,6 @@ august_temps <- water_temp |>
 #all_months_temps
 
 ```
-
 
 ```{r water-temp-plots}
 # plotting august temp trends per site, within our lobster data time range
@@ -440,23 +407,18 @@ allsites_aug_temp_plot <- ggplot(data = allsites_aug_temps) +
 
 allsites_aug_temp_plot 
 ```
-### Interpretation 
+
+### Interpretation
 
 It is important to note that this time range differs from our lobster data time range -- our temperature data begins in 2002, while our lobster records begin in 2012.
 
+The dotted vertical line in each graph once again shows the beginning of the 2015/2016 El Niño. There is a clear spike in average reef bottom temperature in August of 2015 across all study sites. There is also a notable spike (and maximum peak) at all sites in 2018. There were record-breaking SST anomalies that year at many points along the Southern California Coastline, particularly along La Jolla, San Diego, where the Scripps Institution of Oceanography recorded water temperatures of 25.9 degrees Celsius, beating the previous record of 25.8 C from 1931 (NASA Earth Observatory, 2018, Scripps Institution of Oceanography, 2018).
 
-The dotted vertical line in each graph once again shows the beginning of the 2015/2016 El Niño. There is a clear spike in average reef bottom temperature in August of 2015 across all study sites. There is also a notable spike (and maximum peak) at all sites in 2018. There were record-breaking SST anomalies that year at many points along the Southern California Coastline, particularly along La Jolla, San Diego, where the Scripps Institution of Oceanography recorded water temperatures of 25.9 degrees Celsius, beating the previous record of 25.8 C from 1931 (NASA Earth Observatory, 2018, Scripps Institution of Oceanography, 2018). 
+\[add explanation, analysis\]
 
-[add explanation, analysis]
-
-[ add note about how sea surface temperatures typically peak in August, Scripps Shore Stations research]
+\[ add note about how sea surface temperatures typically peak in August, Scripps Shore Stations research\]
 
 Niño
-
-
-
-
-
 
 ```{r lobster-temps-joins}
 # joining our lobster data subsets and our temperature trends data to investigate the relationship between average temperature and average lobster carapace size 
@@ -484,9 +446,7 @@ all_lobs_lm_selection <- lobster_temps_all |>
 
 ```
 
-
 $$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
-
 
 ```{r lobster-temps-plots}
 # preliminary plot of the joined data
@@ -511,10 +471,7 @@ lobster_temps_august_plot <- ggplot(data = aug_lobs_lm_selection,
 lobster_temps_august_plot
 ```
 
-
-Multiple Regression: 
-$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
-
+Multiple Regression: $$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
 
 ```{r lobster-temps-simple-lm}
 # run simple linear regression on temp and size, taking temperature differences at each site into account
@@ -544,38 +501,31 @@ tab_model(lobster_temp_reg_august, lobster_temp_reg,
 
 
 ```
+
 ### Regression Interpretation
 
 Interpretation of coefficients in September-inclusive Regression:
 
-- **Intercept:** at the Arroyo Quemado Reef (AQUE) study site (our "dummy variable"), when the reef bottom temperature is 0 degrees Celsius, the expected lobster carapace size is 94.1 mm (nonsensical, from the SBC LTER records of reef bottom temperatures, which have been recorded every 15 minutes, ongoing since 2002, the minimum recorded temperature of all time in our data set is `r(min(water_temp$temp_c))` degrees Celsius). 
-- **Slope: `avg_temp`:** Holding `site` constant (comparing average lobster carapace lengths and average water temperatures only to those of the same SBC LTER study site), at the AQUE study site, given a one unit change in average reef bottom temperature (an increase of 1 degree Celsius), we expect the average carapace length of lobsters to change by `r cat(round(lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
+-   **Intercept:** at the Arroyo Quemado Reef (AQUE) study site (our "dummy variable"), when the reef bottom temperature is 0 degrees Celsius, the expected lobster carapace size is 94.1 mm (nonsensical, from the SBC LTER records of reef bottom temperatures, which have been recorded every 15 minutes, ongoing since 2002, the minimum recorded temperature of all time in our data set is `r(min(water_temp$temp_c))` degrees Celsius).
+-   **Slope: `avg_temp`:** Holding `site` constant (comparing average lobster carapace lengths and average water temperatures only to those of the same SBC LTER study site), at the AQUE study site, given a one unit change in average reef bottom temperature (an increase of 1 degree Celsius), we expect the average carapace length of lobsters to change by `r cat(round(lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
 
-Interpretation of `site` coefficients:
-- Note, the coefficients following `avg_temp` are to be interpreted in relation to `avg_temp`, as it represents AQUE, our test or dummy variable.
+Interpretation of `site` coefficients: - Note, the coefficients following `avg_temp` are to be interpreted in relation to `avg_temp`, as it represents AQUE, our test or dummy variable.
 
-- `siteCARP`: For the SBC LTER Carpenteria Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a  `r cat(round(lobster_temp_reg$coefficients['siteCARP'], 2))` mm increase in average lobster carapace size as compared to the AQUE site expected slope of -1.14 mm per 1 degree increase in Celsius, for a total expected change in average lobster carapace length of `r cat(round(lobster_temp_reg$coefficients['siteCARP'] + lobster_temp_reg$coefficients['avg_temp'], 2))` mm.   
+-   `siteCARP`: For the SBC LTER Carpenteria Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a `r cat(round(lobster_temp_reg$coefficients['siteCARP'], 2))` mm increase in average lobster carapace size as compared to the AQUE site expected slope of -1.14 mm per 1 degree increase in Celsius, for a total expected change in average lobster carapace length of `r cat(round(lobster_temp_reg$coefficients['siteCARP'] + lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
 
 (moving forward, I will only describe the overall/total expected change (`site___` + `avg_temp`)):
 
-- `siteIVEE`: For the SBC LTER Isla Vista Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 0.04 mm *increase* in average lobster carapace size. 
-- `siteMOHK`: For the SBC LTER Mohawk Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 2.48 mm *decrease* in average lobster carapace size.
-- `siteNAPL`: For the SBC LTER Naples Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 6.61 mm *increase* in average lobster carapace size.
+-   `siteIVEE`: For the SBC LTER Isla Vista Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 0.04 mm *increase* in average lobster carapace size.
+-   `siteMOHK`: For the SBC LTER Mohawk Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 2.48 mm *decrease* in average lobster carapace size.
+-   `siteNAPL`: For the SBC LTER Naples Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 6.61 mm *increase* in average lobster carapace size.
 
+**Interpreting Uncertainty:** - There is notably more uncertainty in the September-inclusive regression than in the regression run on data collected exclusively in August, with the exception of slightly smaller Standard Errors in the August-exclusive regression.
 
+-   The intercept estimate is a fatalistically significant estimate, with a significance level of 0 being met in both regressions.
 
-**Interpreting Uncertainty:**
-- There is notably more uncertainty in the September-inclusive regression than in the regression run on data collected exclusively in August, with the exception of slightly smaller Standard Errors in the August-exclusive regression. 
-
-- The intercept estimate is a fatalistically significant estimate, with a significance level of 0 being met in both regressions. 
-
-- In both regression summaries, we can see that the significance levels of 0.1 (no symbol) and 0.01 ('*' symbol) are not met for the rest of the coefficients if we round to the nearest relevant decimal place. If we do not round, then 
-
-
-
+-   In both regression summaries, we can see that the significance levels of 0.1 (no symbol) and 0.01 ('\*' symbol) are not met for the rest of the coefficients if we round to the nearest relevant decimal place. If we do not round, then
 
 The temperatures may vary by (and dependent on) site, so we'll incorporate this interaction term in our multiple regression next:
-
 
 ```{r lobster-temp-multiple-reg}
 
@@ -594,9 +544,7 @@ summary(lobster_multi_reg)
 
 ```
 
-
-More stats:
-t-tests?
+More stats: t-tests?
 
 ```{r t-test-lobster-temp}
 # ungrouping by site to find average size and temperature per year across all sites
@@ -623,8 +571,6 @@ summary(lm(avg_size ~ avg_temp, data = allsites_lobs_temp_aug))
 
 ```
 
-
-
 ```{r hand-se-calc}
 # n1 = ncbirths_complete %>% filter(habit == "nonsmoker") %>% count()
 # n2 = ncbirths_complete %>% filter(habit == "smoker") %>% count()
@@ -633,7 +579,6 @@ summary(lm(avg_size ~ avg_temp, data = allsites_lobs_temp_aug))
 # SE = as.numeric(sqrt(s1^2/n1 + s2^2/n2))
 # print(SE)
 ```
-
 
 ```{r hand-se-calc}
 lobster_temps_august
@@ -650,17 +595,12 @@ summary(lobster_mpa_reg)
 
 ```
 
-
-
 ```{r}
 
 
 
 
 ```
-
-
-
 
 ```{r lobster_temp_reg}
 lobster_regression <- lm(formula = temp_c ~ count, data = lobster_abd_temp)
@@ -688,12 +628,9 @@ ggplot(data = lobster_summary) +
 
 ```
 
-
 ```{r}
 acf(water_temp$temp_c, lag.max=12)
 ```
-
-
 
 ```{r}
 
@@ -706,8 +643,6 @@ acf(water_temp$temp_c, lag.max=12)
 #   components() %>%
 #   autoplot() 
 ```
-
-
 
 ```{r fish-data}
 # setting file path for fish abundance
@@ -739,7 +674,6 @@ fish_temp_summary
 
 ```
 
-
 ```{r iucn-data}
 
 iucn_fp <- here("data", "redlist_species_data_all_fish", "assessments.csv")
@@ -765,7 +699,6 @@ head(fish_temp_iucn)
 
 ```
 
-
 ```{r}
 fish_temp_summary |> 
   ggplot(aes(x = date,
@@ -774,7 +707,6 @@ fish_temp_summary |>
   geom_point() +
   theme(legend.position = "none")
 ```
-
 
 ```{r plotting_function}
 
@@ -793,17 +725,12 @@ jitter_plot <- function(.data) {
 
 ```
 
-
 ```{r temp_time_plot}
 
 temp_time_plot <- jitter_plot(.data = fish_temp_summary)
 
 temp_time_plot
 ```
-
-
-
-
 
 ```{r}
 fish_count_plot <- fish_temp_summary |> 
@@ -821,7 +748,6 @@ fish_count_plot
 
 
 ```
-
 
 ```{r}
 hist(fish_temp_summary$mean_temp)
@@ -848,7 +774,6 @@ fish_count_plot_facet
 
 ```
 
-
 ```{r site_selections}
 
 carp <- fish_temp_summary |> 
@@ -860,9 +785,6 @@ carp_plot
 
 
 ```
-
-
-
 
 ```{r}
 
@@ -879,30 +801,19 @@ carp_plot
 
 ```
 
-
-
-
 make diversity index, look at relationship between water temp and diversity
-
 
 group by site, date
 
-summarize with shannon index
-https://rdrr.io/cran/vegan/man/diversity.html 
+summarize with shannon index https://rdrr.io/cran/vegan/man/diversity.html
 
+Null hypothesis: water temperature has zero correlation with fish diversity Alternative hypothesis: water temperature is correlated with fish diversity
 
-
-Null hypothesis: water temperature has zero correlation with fish diversity
-Alternative hypothesis: water temperature is correlated with fish diversity
-
-
-Shannon or Shannon–Weaver (or Shannon–Wiener) index is defined as $H' = - \sum_{i} log_{b} p_{i} $, where $p_{i}$ is the proportional abundance of species $i$ and $b$ is the base od the logarithm. It is most popular to use natural logarithms, but some argue for base $b = 2$ (which makese sense, but no real difference).
+Shannon or Shannon--Weaver (or Shannon--Wiener) index is defined as \$H' = - \sum*{i} log*{b} p\_{i} \$, where $p_{i}$ is the proportional abundance of species $i$ and $b$ is the base od the logarithm. It is most popular to use natural logarithms, but some argue for base $b = 2$ (which makese sense, but no real difference).
 
 The diversity function can find the total (or gamma) diversity of pooled communities with argument groups. The average alpha diversity can be found as the mean of diversities by the same groups, and their difference or ratio is an estimate of beta diversity (see Examples). The pooling can be based either on the observed abundancies, or all communities can be equalized to unit total before pooling; see Jost (2007) for discussion. Functions adipart and multipart provide canned alternatives for estimating alpha, beta and gamma diversities in hierarchical settings.
 
 None of these diversity indices is usable for empty sampling units without any species, but some of the indices can give a numeric value. Filtering out these cases is left for the user.
-
-
 
 ```{r diversity}
 fish_diversity_df <- fish_temp_iucn |> 
@@ -917,7 +828,6 @@ head(fish_diversity)
 
 # get average temperature per site over time (per year)
 ```
-
 
 ```{r avg-temps}
 avg_temps_fish <- fish_diversity_df |> 
@@ -952,7 +862,6 @@ agg_avg_temps_plot <- ggplot() +
   
 ```
 
-
 ```{r avg-temps-plot}
 avg_temp_subset_plot <- ggplot(data = avg_temps_subset) +
   geom_line(aes(x = year, y = avg_temp)) +
@@ -967,13 +876,10 @@ avg_temp_subset_plot <- ggplot(data = avg_temps_subset) +
 avg_temp_subset_plot
 
 ```
-- note - biggest/strongest El Nino that California has ever experienced, between 2015 and 2016. Rise in ocean temperatures. 
 
+-   note - biggest/strongest El Nino that California has ever experienced, between 2015 and 2016. Rise in ocean temperatures.
 
-
-1.. site year index
-2. site year temp -- average per site per year
-3. site year iucn status
+1.. site year index 2. site year temp -- average per site per year 3. site year iucn status
 
 ```{r iucn-status-time}
 
@@ -1055,9 +961,6 @@ carp_iucn_trend |> ggplot() +
 
 ```
 
-
-
-
 ```{r demographics-over-time}
 
 status_temp_trend <- inner_join(iucn_status, avg_temps_fish)
@@ -1070,10 +973,6 @@ summary(lm(formula = index ~ avg_temp, data = diversity_temp_trend))
 
 ```
 
-
-
-
-
 ```{r food-web}
 
 #food_web <- read_csv("data/food_web/knb-lter-sbc.56.4/byrnes_foodweb_table1.csv", na = c("-99999")) |> 
@@ -1082,11 +981,9 @@ summary(lm(formula = index ~ avg_temp, data = diversity_temp_trend))
 
 ```
 
-
-
 ## Additional Considerations & Possible Next Steps
 
-Given more time and resources, there are a few elements of this analysis that I would change and several "next steps" that would be interesting to pursue. 
+Given more time and resources, there are a few elements of this analysis that I would change and several "next steps" that would be interesting to pursue.
 
 The first change that I would make to my analysis is to include the monthly average temperatures for both August and September at the AQUE study site in 2014. Due to the limited scope and nature of this project, I was unable to successfully perform that operation.
 
