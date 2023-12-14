@@ -113,7 +113,8 @@ library(feasts)
 library(tsibble)
 library(forecast)
 
-
+# for nice regression output
+library(sjPlot)
 
 
 ```
@@ -486,6 +487,9 @@ all_lobs_lm_selection <- lobster_temps_all |>
 ```
 
 
+$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
+
+
 ```{r lobster-temps-plots}
 # preliminary plot of the joined data
 lobster_temps_august_plot <- ggplot(data = aug_lobs_lm_selection, 
@@ -510,6 +514,10 @@ lobster_temps_august_plot
 ```
 
 
+Multiple Regression: 
+$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
+
+
 ```{r lobster-temps-simple-lm}
 # run simple linear regression on temp and size, taking temperature differences at each site into account
 
@@ -521,6 +529,20 @@ summary(lobster_temp_reg_august)
 # for september-inclusive lobster data and august-only water temp data
 lobster_temp_reg <- lm(formula = avg_size ~ avg_temp + site, data = all_lobs_lm_selection)
 summary(lobster_temp_reg)
+
+
+# use sjPlot to show a comparison of the outputs from running these models
+
+#:::panel-tabset
+
+
+
+tab_model(lobster_temp_reg_august, lobster_temp_reg,
+        #  title = "Multiple Regression: formula = average  ~ avg_temp + site",
+          dv.labels = c("August", "August & September"),
+          digits = 3
+          )
+
 
 
 ```
