@@ -327,7 +327,7 @@ First, we'll make two subsets (August vs. August & September) and then we'll plo
 
 # keeping data from August and September
 lobster_all <- lobster_size %>% 
-  group_by(year, site) %>% 
+  group_by(year, month, site) %>% 
   summarize(avg_size = mean(size_mm, na.rm = TRUE),
             max_size = max(size_mm, na.rm = TRUE), 
             min_size = min(size_mm, na.rm = TRUE))
@@ -369,7 +369,7 @@ lobster_size_plot_all <- lobster_all %>%  ggplot() +
   labs(
     #color = "Site",
        x = "Year",
-       y = "Carapace Length (mm)",
+       y = "Average Carapace Length (mm)",
        title = "Annual average Spiny Lobster carapace length (2012-2023)",
        subtitle = "organized by SBC LTER study site") +
   theme(legend.position = "none")
@@ -396,7 +396,7 @@ lobster_size_plot_august <- lobster_august %>%  ggplot() +
   labs(
     #color = "Site",
        x = "Year",
-       y = "Average Size (mm)",
+       y = "Average Carapace Length (mm)",
        title = "Annual average Spiny Lobster carapace length (2012-2023)",
        subtitle = "organized by SBC LTER study site, data collected in August only") +
   theme(legend.position = "none")
@@ -450,11 +450,11 @@ allsites_aug_temps <- water_data %>%
 
 
 site_temps <- water_data %>%  
-  filter(month(date) %in% c(8)) %>%  # select August temps
+  filter(month(date) %in% c(8, 9)) %>%  # select August temps
 #  filter(year > 2011) |>  # selecting lobster data time range
   # I took out this step because it made the plot axes contain 0.0, 0.5 numeric values
   filter(site %in% c((unique(lobster_size$site)))) %>%   # selecting Lobster data study sites
-  group_by(year, site) %>%  
+  group_by(year, month, site) %>%  
   summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
 
 
@@ -482,7 +482,7 @@ allsites_aug_temp_plot <- ggplot(data = allsites_aug_temps) +
   labs(title = "Average Reef Bottom Temperatures in August Over Time",
        subtitle = "across selected SBC LTER study sites (2002-2022)", 
        x = "Year",
-       y = "Average Temperature (C)") +
+       y = "Average Temperature (ºC)") +
   annotate("text", x=2014, y=19, label="El Niño", angle=0) 
 
 
@@ -495,11 +495,15 @@ There is a clear spike in average reef bottom temperature in August of 2015 acro
 Now we'll join the lobster size data and the temperature data, which will narrow our time range to 2012-2022.
 
 ```{r lobster-temp-joins}
-lobster_temp_august_full <- inner_join(lobster_august, site_temps)
-
-lobster_temps <- lobster_temp_august_full %>% 
+lobster_temps_august <- inner_join(lobster_august, site_temps) %>% 
   select(-max_size, -min_size)
 
+# this will make sure that we're comparing the same month for each site and each year, 
+# so for most years, sites, and months, it'll be august data
+# but for the 2014 AQUE and IVEE data collected in September,
+# we'll be pairing those averages with average temperature in September
+lobster_temps_all <- inner_join(lobster_all, site_temps) %>% 
+  select(-max_size, -min_size)
 
 ```
 
@@ -511,7 +515,7 @@ lobster_temps <- lobster_temp_august_full %>%
 ```{r temp-site-plots}
 # plotting august temp trends per site, within our lobster data time range
 
-august_temp_trends <- ggplot(data = lobster_temps, aes(x = year, y = avg_temp)) +
+august_temp_trends <- ggplot(data = lobster_temps_august, aes(x = year, y = avg_temp)) +
   geom_hline(yintercept = 16.19, 
              linetype = "dashed", 
              alpha = 0.6) + 
@@ -529,7 +533,7 @@ august_temp_trends <- ggplot(data = lobster_temps, aes(x = year, y = avg_temp)) 
   labs(title = "Average Reef Bottom Temperatures in August Over Time",
        subtitle = "organized by selected SBC LTER study sites (2012-2022)", 
        x = "Year",
-       y = "Average Temperature (C)") +
+       y = "Average Temperature (ºC)") +
 #  annotate("text", x=2011, y=19, label="El Niño", angle=0) # label looks messy on faceted plot, but is worthwhile to add on individual site plots
   theme(legend.position = "none") # we're coloring and facet wrapping by site, so a legend is redundant
 
@@ -562,15 +566,109 @@ With our current data, we can model the relationship between average carapace le
 
 $$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
 Where
+
 - $\mu CL$ is the average carapace length, in millimeters, in August
-- $\beta_{0}$ is the intercept, or expected average carapace length, in millimeters
+- $\beta_{0}$ is the intercept, or expected average carapace length, in millimeters, when the average August temperature is 0ºC and site is held constant (for our reference site, AQUE)
+- $\beta_{1}$ is the slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC), when site is held constant (for our reference site, AQUE)
+- $\beta_{2}$ is the difference in slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC) between our reference group (site AQUE) and each other site.
+- $\varepsilon$ is our error term, containing everything else that impacts average expected carapace length as measured in August.
+
+Once again, whenever I say "average", followed by any term, I'm referring to the average of that variable *as measured in August* of each year. 
+
+
+We can run this linear regression feeding "site" into the equation, with data across all 5 sites, and we can also run our linear regression model on each site, which would shift our equation to a simple linear regression of 
+
+$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\varepsilon_i$$
+
+where the main change is that our $\beta_{1}$ term is now the expected change in average carapace length given a 1 unit or 1ºC change in average temperature.
+
+
+
+First, let's plot our general, overall relationship between average carapace length and average reef bottom temperature in August, using only data from August.
 
 ### Plotting 
 
 
+```{r lobster-temp-rel-plot, fig.width=8, fig.height=6}
+
+
+# preliminary plot of the joined data
+lobster_temps_august_plot <- ggplot(data = lobster_temps_august, 
+                             aes(x = avg_temp,
+                                 y = avg_size)) + 
+  geom_jitter(alpha = 0.7) +
+  geom_smooth(method='lm',
+              formula= y~x,
+              na.rm = TRUE,
+              color="seagreen",
+              se=TRUE) +
+  scale_x_continuous(expand = c(0,0), limits = c(14.5, 20)) +
+  scale_y_continuous(expand = c(0,0), limits = c(65, 94)) + 
+  theme_bw() +
+  labs(title = "Average Lobster Size by Average Reef Bottom Temperature (August, annual averages)", 
+       subtitle = "SBC LTER data on California Spiny Lobster carapace length (mm), reef bottom temperatures (ºC)", 
+       x = "Average Temperature (ºC)",
+       y = "Average Size (mm)")
+
+# view plots
+lobster_temps_august_plot
+
+```
+
+
+There seems to be a relationship here, where as average reef bottom temperatures increase, average lobster carapace lengths decrease, though with relatively few data points here and the impact that site may have on this relationship not accounted for in this plot, it's hard to make any real claims.
+
+
+Multiple Regression: $$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
+
+```{r lobster-temps-simple-lm}
+# run simple linear regression on temp and size, taking temperature differences at each site into account
+
+# for august-only data
+lobster_temp_reg_august <- lm(formula = avg_size ~ avg_temp + site, data = lobster_temps_august)
+#summary(lobster_temp_reg_august)
+
+
+# for september-inclusive lobster data and august-only water temp data
+lobster_temp_reg <- lm(formula = avg_size ~ avg_temp + site, data = lobster_temps_all)
+#summary(lobster_temp_reg)
+
+
+# use sjPlot to show a comparison of the outputs from running these models
+
+
+sjPlot::tab_model(lobster_temp_reg_august, lobster_temp_reg,
+                  #  title = "Multiple Regression: formula = average  ~ avg_temp + site",
+                  dv.labels = c("August", "August & September"),
+                  digits = 3
+)
 
 
 
+```
+
+### Regression Interpretation
+
+Interpretation of coefficients in September-inclusive Regression:
+
+-   **Intercept:** at the Arroyo Quemado Reef (AQUE) study site (our "dummy variable"), when the reef bottom temperature is 0 degrees Celsius, the expected lobster carapace size is 94.1 mm (nonsensical, from the SBC LTER records of reef bottom temperatures, which have been recorded every 15 minutes, ongoing since 2002, the minimum recorded temperature of all time in our data set is `r(min(water_temp$temp_c))` degrees Celsius).
+-   **Slope: `avg_temp`:** Holding `site` constant (comparing average lobster carapace lengths and average water temperatures only to those of the same SBC LTER study site), at the AQUE study site, given a one unit change in average reef bottom temperature (an increase of 1 degree Celsius), we expect the average carapace length of lobsters to change by `r cat(round(lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
+
+Interpretation of `site` coefficients: - Note, the coefficients following `avg_temp` are to be interpreted in relation to `avg_temp`, as it represents AQUE, our test or dummy variable.
+
+-   `siteCARP`: For the SBC LTER Carpenteria Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a `r cat(round(lobster_temp_reg$coefficients['siteCARP'], 2))` mm increase in average lobster carapace size as compared to the AQUE site expected slope of -1.14 mm per 1 degree increase in Celsius, for a total expected change in average lobster carapace length of `r cat(round(lobster_temp_reg$coefficients['siteCARP'] + lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
+
+(moving forward, I will only describe the overall/total expected change (`site___` + `avg_temp`)):
+
+-   `siteIVEE`: For the SBC LTER Isla Vista Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 0.04 mm *increase* in average lobster carapace size.
+-   `siteMOHK`: For the SBC LTER Mohawk Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 2.48 mm *decrease* in average lobster carapace size.
+-   `siteNAPL`: For the SBC LTER Naples Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 6.61 mm *increase* in average lobster carapace size.
+
+**Interpreting Uncertainty:** - There is notably more uncertainty in the September-inclusive regression than in the regression run on data collected exclusively in August, with the exception of slightly smaller Standard Errors in the August-exclusive regression.
+
+-   The intercept estimate is a fatalistically significant estimate, with a significance level of 0 being met in both regressions.
+
+-   In both regression summaries, we can see that the significance levels of 0.1 (no symbol) and 0.01 ('\*' symbol) are not met for the rest of the coefficients if we round to the nearest relevant decimal place. If we do not round, then
 
 
 
