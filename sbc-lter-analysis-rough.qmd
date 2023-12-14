@@ -5,9 +5,7 @@ format: html
 editor: visual
 ---
 
-```{r}
 
-```
 
 ## Introduction
 

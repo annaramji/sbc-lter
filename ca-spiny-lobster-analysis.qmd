@@ -1,0 +1,173 @@
+---
+title: "California Spiny Lobsters & Reef Bottom Temperatures"
+author: "Anna Ramji"
+format: html
+editor: visual
+---
+
+## Introduction
+
+In this Quarto Document, I'll be working with data from the Santa Barbara Coast LTER sites, analyzing data using statistical analysis methods covered in the Master of Environmental Data Science program's Environmental Data Science (EDS) 222: Statistics for Environmental Data Science course taught by Tamma Carleton (tcarleton\@ucsb.edu).
+
+## Background
+
+(Putting essential background information here)
+
+(setting up the problem)
+
+(metadata, column info, etc.)
+
+### Dataset 1: SBC LTER California Spiny Lobster Data
+
+Reed, D. and R. Miller. 2023. SBC LTER: Reef: Abundance, size and fishing effort for California Spiny Lobster (Panulirus interruptus), ongoing since 2012 ver 9. Environmental Data Initiative. https://doi.org/10.6073/pasta/3595322687af94cd532620ad9db94c77 (Accessed 2023-11-22).
+
+Notes on methods, limitations:
+
+transects were sampled by two SCUBA divers during daylight hours -- lobsters are most active at night
+
+### Dataset 2: SBC LTER Reef: Bottom temperature data
+
+Santa Barbara Coastal LTER, D. Reed, and R. Miller. 2023. SBC LTER: Reef: Bottom Temperature: Continuous water temperature, ongoing since 2000 ver 29. Environmental Data Initiative. https://doi.org/10.6073/pasta/3071d4179516b5ae56018bfa03fea9dd (Accessed 2023-12-03).
+
+Note: Depth of temperature logger at each site varies from 4.95 to 8.15 meters.
+
+### Dataset 3: SBC LTER Kelp Forest dynamics: Fish abundance
+
+Reed, D. and R. Miller. 2023. SBC LTER: Reef: Kelp Forest Community Dynamics: Fish abundance ver 38. Environmental Data Initiative. https://doi.org/10.6073/pasta/92003d368dfe121f6709ad1507412f66 (Accessed 2023-11-22)
+
+### Dataset 4: Feeding relationships
+
+Santa Barbara Coastal LTER, J.E. Byrnes, D.C. Reed, B.J. Cardinale, K.C. Cavanaugh, S.J. Holbrook, and R.J. Schmitt. 2022. SBC LTER: Reef: Feeding relationships for kelp forest species ver 4. Environmental Data Initiative. https://doi.org/10.6073/pasta/e82a082f4440d469c84e11a265266004 (Accessed 2023-11-22).
+
+# Context
+
+## California Spiny Lobsters
+
+*Panulirus interruptus*
+
+\[include images of males vs. females\]
+
+https://cadivingnews.com/the-lifecycle-of-spiny-lobsters/
+
+(3.25 inches = 82.55 millimeters)
+
+El Niño Barnard, P., Hoover, D., Hubbard, D. et al. Extreme oceanographic forcing and coastal response due to the 2015--2016 El Niño. Nat Commun 8, 14365 (2017). https://doi.org/10.1038/ncomms14365
+
+California Department of Fish and Wildlife, Marine Species Portal : https://marinespecies.wildlife.ca.gov/california-spiny-lobster/true/
+
+California Department of Fish and Wildlife. 2019 California Spiny Lobster, *Panulirus interruptus*, Enhanced Status Report.
+
+Contributors: Jenny Hofmeister, Carlos Mireles, Julia Coates, Travis Buck, Tom Mason, Doug Neilson (2019)
+
+-   Spiny lobsters mature at about 5 years of age, or 2.5-inch carapace length. They have a complex, 2-year reproductive cycle from mating to the settlement of juvenile lobsters. Fecundity increases with size, and females produce one brood of eggs per year.
+-   2.5 inches = 63.5 mm
+
+Paper commonly referenced to for size and age estimates at different life cycle stages of California Spiny Lobster:
+
+Engle J. M. (1979). Ecology and growth of juvenile California spiny lobster, *Panulirus interruptus* (Randall) (Los Angeles, California, United States: University of Southern California).
+
+### SBC LTER long term kelp forest study sites
+
+Full name for all sites covered in this study (primarily Lobster sites), images of where the sites are located
+
+### Importing libraries
+
+```{r libraries, warning=FALSE, message=FALSE}
+
+# for tidy data etc.
+library(tidyverse)
+library(janitor) 
+library(lubridate)
+
+# for output formatting
+library(gt)
+library(tufte)
+library(patchwork) # for displaying multiple plots
+
+# for reading in data
+library(here) # for reproducible filepaths (like os in Python)
+library(readr)
+
+# for analysis
+library(vegan) # for creating a diversity index
+library(feasts)
+library(tsibble)
+library(forecast)
+
+# for nice regression output
+library(sjPlot)
+
+```
+
+
+
+## Reading in the Data
+
+
+Lobster Data:
+
+```{r lobster-data, warning=FALSE, message=FALSE}
+# setting the file path for our lobster abundance csv
+lobster_abundance_fp <- here::here("data", "lobsters", "knb-lter-sbc.77.9",
+                             "Lobster_Abundance_All_Years_20230831.csv")
+
+# read in lobster abundance data from filepath
+lobster_abd <- read_csv(lobster_abundance_fp, na = c("-99999")) |> 
+  clean_names() |> 
+  mutate("day" = lubridate::day(date)) # adding a "day" column for possible analysis later on 
+
+```
+
+
+Reef bottom temperature data:
+
+```{r water-temp-data, warning=FALSE, message=FALSE}
+# setting water temperature file path
+water_temp_fp <- here("data", "water-temp", "knb-lter-sbc.13.29", "Bottom_temp_all_years_20230724.csv")
+
+# reading in water temp data
+water_temp <- read_csv(water_temp_fp, na = c("-99999")) |> 
+  clean_names() |> 
+  rename("date" = date_local, "time" = time_local) |> # cleaning names
+  select(-serial) |> 
+  mutate("year" = lubridate::year(date), # adding columns to join by
+         "month" = lubridate::month(date),  # and filter later on 
+         "day" = lubridate::day(date)) # for possible later analysis
+```
+
+
+
+
+### Preliminary plotting, data exploration
+
+
+
+Let's check our data for normality to see what our options are in terms of analysis:
+
+```{r lobster-size-dist}
+# check to see if normally distributed
+
+lobster_size_dist <- ggplot(data = lobster_abd) +
+  geom_histogram(aes(x = size_mm), fill = "seagreen", color = "black") +
+  theme_bw() +
+  labs(title = "Distribution of California Spiny Lobster Size", 
+       subtitle = "SBC LTER CA data (2012-2023), size measured by carapace length (mm)",
+       x = "Carapace Length (mm)",
+       y = "Count")
+
+
+lobster_size_dist
+
+```
+
+This seems relatively normally distributed, with a right tail indicating several counts of higher values.
+
+
+
+
+
+
+
+
+
+
