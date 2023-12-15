@@ -449,15 +449,6 @@ allsites_aug_temps <- water_data %>%
   summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
 
 
-site_temps <- water_data %>%  
-  filter(month(date) %in% c(8, 9)) %>%  # select August temps
-#  filter(year > 2011) |>  # selecting lobster data time range
-  # I took out this step because it made the plot axes contain 0.0, 0.5 numeric values
-  filter(site %in% c((unique(lobster_size$site)))) %>%   # selecting Lobster data study sites
-  group_by(year, month, site) %>%  
-  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
-
-
 august_temps <- water_data %>%
   filter(site %in% c((unique(lobster_size$site)))) %>% 
   filter(month == 8)
@@ -495,14 +486,31 @@ There is a clear spike in average reef bottom temperature in August of 2015 acro
 Now we'll join the lobster size data and the temperature data, which will narrow our time range to 2012-2022.
 
 ```{r lobster-temp-joins}
-lobster_temps_august <- inner_join(lobster_august, site_temps) %>% 
+# making august-only water temp subset
+august_site_temps <- water_data %>%  
+  filter(month(date) %in% c(8)) %>%  # select August temps
+  filter(site %in% c((unique(lobster_size$site)))) %>%  # selecting Lobster data study sites
+  group_by(year, site) %>%  # grouping by year and site to join (only 1 month, no need to group by it)
+  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
+
+
+lobster_temps_august <- inner_join(lobster_august, august_site_temps) %>% 
   select(-max_size, -min_size)
+
 
 # this will make sure that we're comparing the same month for each site and each year, 
 # so for most years, sites, and months, it'll be august data
 # but for the 2014 AQUE and IVEE data collected in September,
+
+site_temps <- water_data %>%  
+  filter(month(date) %in% c(8, 9)) %>%  # select August and September temps
+  filter(site %in% c((unique(lobster_size$site)))) %>%   # selecting Lobster data study sites
+  group_by(year, month, site) %>%  # grouping by year, month, and site, so we can join by all 
+  summarize(avg_temp = mean(temp_c, na.rm = TRUE)) # find avg temp
+
 # we'll be pairing those averages with average temperature in September
-lobster_temps_all <- inner_join(lobster_all, site_temps) %>% 
+lobster_temps_all <- inner_join(site_temps,
+                                lobster_all) %>%  # this df also has maintained its "month" column
   select(-max_size, -min_size)
 
 ```
@@ -562,34 +570,27 @@ Comparing our average temperature and average size plots side by side, there see
 
 ## Lobster size & reef temperature relationship
 
-With our current data, we can model the relationship between average carapace length (mm) in August with the following equation:
+In this section, we will:
+- look at the general relationship between our size and temperature variables (plot)
 
-$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
-Where
+- run multiple linear regression (size = temp + site)
 
-- $\mu CL$ is the average carapace length, in millimeters, in August
-- $\beta_{0}$ is the intercept, or expected average carapace length, in millimeters, when the average August temperature is 0ºC and site is held constant (for our reference site, AQUE)
-- $\beta_{1}$ is the slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC), when site is held constant (for our reference site, AQUE)
-- $\beta_{2}$ is the difference in slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC) between our reference group (site AQUE) and each other site.
-- $\varepsilon$ is our error term, containing everything else that impacts average expected carapace length as measured in August.
+- run multiple regression with an interaction term (size = temp + site + temp * site)
 
-Once again, whenever I say "average", followed by any term, I'm referring to the average of that variable *as measured in August* of each year. 
-
-
-We can run this linear regression feeding "site" into the equation, with data across all 5 sites, and we can also run our linear regression model on each site, which would shift our equation to a simple linear regression of 
-
-$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\varepsilon_i$$
-
-where the main change is that our $\beta_{1}$ term is now the expected change in average carapace length given a 1 unit or 1ºC change in average temperature.
+- run simple linear regression (size = temp) for each site
 
 
 
-First, let's plot our general, overall relationship between average carapace length and average reef bottom temperature in August, using only data from August.
-
-### Plotting 
+### Simple linear model plot
 
 
-```{r lobster-temp-rel-plot, fig.width=8, fig.height=6}
+Before we dive into the complexities of the relationship between average carapace length in August and average reef bottom temperature in August, let's take a more general look at the combined data that we're working with. 
+
+Here we'll plot our joined size & temperature data subset with data exclusively collected in August each year from 2012-2022:
+
+
+
+```{r lobster-temp-rel-plot, warning=FALSE, message=FALSE, fig.width=8, fig.height=5}
 
 
 # preliminary plot of the joined data
@@ -605,6 +606,8 @@ lobster_temps_august_plot <- ggplot(data = lobster_temps_august,
   scale_x_continuous(expand = c(0,0), limits = c(14.5, 20)) +
   scale_y_continuous(expand = c(0,0), limits = c(65, 94)) + 
   theme_bw() +
+  ggpubr::stat_regline_equation(
+    aes(label = after_stat(eq.label))) + 
   labs(title = "Average Lobster Size by Average Reef Bottom Temperature (August, annual averages)", 
        subtitle = "SBC LTER data on California Spiny Lobster carapace length (mm), reef bottom temperatures (ºC)", 
        x = "Average Temperature (ºC)",
@@ -619,6 +622,27 @@ lobster_temps_august_plot
 There seems to be a relationship here, where as average reef bottom temperatures increase, average lobster carapace lengths decrease, though with relatively few data points here and the impact that site may have on this relationship not accounted for in this plot, it's hard to make any real claims.
 
 
+
+### Multiple regression 
+With our current data, we can model the relationship between average carapace length (mm) in August with the following multiple regression equation:
+
+$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
+Where
+
+- $\mu CL$ is the average carapace length, in millimeters, in August
+- $\beta_{0}$ is the intercept, or expected average carapace length, in millimeters, when the average August temperature is 0ºC and site is held constant (for our reference site, AQUE)
+- $\beta_{1}$ is the slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC), when site is held constant (for our reference site, AQUE)
+- $\beta_{2}$ is the difference in slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC) between our reference group (site AQUE) and each other site.
+- $\varepsilon$ is our error term, containing everything else that impacts average expected carapace length as measured in August.
+
+Once again, whenever I say "average", followed by any term, I'm referring to the average of that variable *as measured in August* of each year. 
+
+
+
+
+
+
+
 Multiple Regression: $$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text Site+\varepsilon_i$$
 
 ```{r lobster-temps-simple-lm}
@@ -626,12 +650,12 @@ Multiple Regression: $$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\beta_{2} \text
 
 # for august-only data
 lobster_temp_reg_august <- lm(formula = avg_size ~ avg_temp + site, data = lobster_temps_august)
-#summary(lobster_temp_reg_august)
+summary(lobster_temp_reg_august)
 
 
 # for september-inclusive lobster data and august-only water temp data
 lobster_temp_reg <- lm(formula = avg_size ~ avg_temp + site, data = lobster_temps_all)
-#summary(lobster_temp_reg)
+summary(lobster_temp_reg)
 
 
 # use sjPlot to show a comparison of the outputs from running these models
@@ -647,30 +671,142 @@ sjPlot::tab_model(lobster_temp_reg_august, lobster_temp_reg,
 
 ```
 
-### Regression Interpretation
+**Regression Interpretation:**
 
-Interpretation of coefficients in September-inclusive Regression:
+*Interpretation of coefficients in August-only Regression:*
 
--   **Intercept:** at the Arroyo Quemado Reef (AQUE) study site (our "dummy variable"), when the reef bottom temperature is 0 degrees Celsius, the expected lobster carapace size is 94.1 mm (nonsensical, from the SBC LTER records of reef bottom temperatures, which have been recorded every 15 minutes, ongoing since 2002, the minimum recorded temperature of all time in our data set is `r(min(water_temp$temp_c))` degrees Celsius).
--   **Slope: `avg_temp`:** Holding `site` constant (comparing average lobster carapace lengths and average water temperatures only to those of the same SBC LTER study site), at the AQUE study site, given a one unit change in average reef bottom temperature (an increase of 1 degree Celsius), we expect the average carapace length of lobsters to change by `r cat(round(lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
+-   **Intercept:** at the Arroyo Quemado Reef (AQUE) study site (our "dummy variable"), when the reef bottom temperature is 0 º Celsius, the expected lobster carapace size is `r cat(round(lobster_temp_reg_august$coefficients["(Intercept)"], 2))` mm (nonsensical, from the SBC LTER records of reef bottom temperatures, which have been recorded every 15 minutes, ongoing since 2002, the minimum recorded temperature of all time in our data set is `r(min(water_data$temp_c))` º Celsius).
+-   **Slope: `avg_temp`:** Holding `site` constant (comparing average lobster carapace lengths and average water temperatures only to those of the same SBC LTER study site), at the AQUE study site, given a one unit change in average reef bottom temperature (an increase of 1 º Celsius) as measured in August, we expect the average carapace length of lobsters to change by `r cat(round(lobster_temp_reg_august$coefficients['avg_temp'], 2))` mm.
 
 Interpretation of `site` coefficients: - Note, the coefficients following `avg_temp` are to be interpreted in relation to `avg_temp`, as it represents AQUE, our test or dummy variable.
 
--   `siteCARP`: For the SBC LTER Carpenteria Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a `r cat(round(lobster_temp_reg$coefficients['siteCARP'], 2))` mm increase in average lobster carapace size as compared to the AQUE site expected slope of -1.14 mm per 1 degree increase in Celsius, for a total expected change in average lobster carapace length of `r cat(round(lobster_temp_reg$coefficients['siteCARP'] + lobster_temp_reg$coefficients['avg_temp'], 2))` mm.
+-   `siteCARP`: For the SBC LTER Carpenteria Reef study site, given a 1 º Celsius change (increase) in avereage reef bottom temperature measured in August, we expect to see a `r cat(round(lobster_temp_reg_august$coefficients['siteCARP'], 2))` mm increase in average lobster carapace size as compared to the AQUE site expected slope of -1.14 mm per 1 degree increase in Celsius, for a total expected change in average lobster carapace length of `r cat(round(lobster_temp_reg_august$coefficients['siteCARP'] + lobster_temp_reg_august$coefficients['avg_temp'], 2))` mm.
 
 (moving forward, I will only describe the overall/total expected change (`site___` + `avg_temp`)):
 
--   `siteIVEE`: For the SBC LTER Isla Vista Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 0.04 mm *increase* in average lobster carapace size.
--   `siteMOHK`: For the SBC LTER Mohawk Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 2.48 mm *decrease* in average lobster carapace size.
--   `siteNAPL`: For the SBC LTER Naples Reef study site, given a 1 degree Celsius increase in temperature, we expect to see a 6.61 mm *increase* in average lobster carapace size.
-
-**Interpreting Uncertainty:** - There is notably more uncertainty in the September-inclusive regression than in the regression run on data collected exclusively in August, with the exception of slightly smaller Standard Errors in the August-exclusive regression.
-
--   The intercept estimate is a fatalistically significant estimate, with a significance level of 0 being met in both regressions.
-
--   In both regression summaries, we can see that the significance levels of 0.1 (no symbol) and 0.01 ('\*' symbol) are not met for the rest of the coefficients if we round to the nearest relevant decimal place. If we do not round, then
+-   `siteIVEE`: For the SBC LTER Isla Vista Reef study site, given a 1 º Celsius increase (in average reef bottom temperature in August), we expect to see a change in average lobster carapace length of `r cat(round(lobster_temp_reg_august$coefficients['siteIVEE'] + lobster_temp_reg_august$coefficients['avg_temp'], 2))` mm.
+-   `siteMOHK`: For the SBC LTER Mohawk Reef study site, given a 1 º Celsius increase in average reef bottom temperature in August, we expect to see a change in average lobster carapace length of `r cat(round(lobster_temp_reg_august$coefficients['siteMOHK'] + lobster_temp_reg_august$coefficients['avg_temp'], 2))` mm.
+-   `siteNAPL`: For the SBC LTER Naples Reef study site, given a 1 º Celsius increase in average reef bottom temperature in August, we expect to see a change in average lobster carapace length of `r cat(round(lobster_temp_reg_august$coefficients['siteNAPL'] + lobster_temp_reg_august$coefficients['avg_temp'], 2))` mm. This positive value is perhaps a sign that something more complicated is going on at this site, or perhaps in general.
 
 
+**$R^2$:**
+
+Because we have multiple terms on the right side of the equation (temp + site), the adjusted $R^2$ value is more relevant and better representative of our model. This adjusted $R^2$ value tells us that around 38% of the variation in our data can be explained by our model, or that 38% of the change in average carapace length in August can be explained by the average reef bottom temperature in August and which study site the lobster is located in.
+
+**Interpreting Uncertainty, Significance:** 
+
+There is notably more uncertainty in the September-inclusive regression than in the regression run on data collected exclusively in August, with wider confidence intervals and fewer estimates holding under an $\alpha$ of 0.05 (bolded p-values). 
+
+The intercept estimate is a significant yet nonsensical estimate, with a significance level of 0 being met in both regressions.
+
+In both regression summaries, the Naples reef site has it's own relationship between average water temperature and average carapace length going in a different direction than all of the other sites -- yet it's the most statistically significant estimate of all of our sites. 
+
+The Arroyo Quemado Reef site has a statistically significant estimate under the August regression, but not under the August & September regression. This makes sense intuitively, as the variation in carapace size and temperature in September does not follow the same pattern as the rest of our data (temperatures in September are cooler than August, and the carapace sizes of our lobsters will continue to grow). From here on out, we will only be using August data in our regression models.
+
+
+
+
+#### Multiple regression with interaction
+
+As temperatures vary in each site, we can add an interaction term to our model to see if this may be a factor that impacts or is contributing to our uncertainty. This new equation is:
+
+$$\mu CL_i =\beta_{0} + \beta_{1} \mu Temp_i +\beta_{2} \text Site + \beta_{3} (\mu Temp_{i} * \text Site) +  \varepsilon_i$$
+Where:
+
+- $\mu CL$ is the average carapace length, in millimeters, in August
+- $\beta_{0}$ is the intercept, or expected average carapace length, in millimeters, when the average August temperature is 0ºC and site is held constant (for our reference site, AQUE)
+- $\beta_{1}$ is the slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC) in August, when site is held constant (for our reference site, AQUE)
+- $\beta_{2}$ is the difference in slope or expected change in average carapace length given a 1 unit change in average temperature (1ºC) in August between our reference group (site AQUE) and each other site.
+- $\beta_{3}$ is the difference in slopes between our different sites, where slope is the average change in carapace length in August given a 1º C change in average reef bottom temperature in August for each site
+- $\varepsilon$ is our error term, containing everything else that impacts average expected carapace length as measured in August.
+
+
+Now that we know what our equation means, let's run the multiple regression with this added interaction term on our August-only dataset:
+
+
+```{r multiple-interaction-reg}
+# run multiple linear regression on temp and size, taking temperature differences at each site into account
+
+# for august-only data
+multi_reg_int_aug <- lm(formula = avg_size ~ avg_temp + site + avg_temp:site,
+                        data = lobster_temps_august)
+
+# summary(multi_reg_int_aug)
+
+# use sjPlot to show a comparison of the outputs from running these models
+
+
+sjPlot::tab_model(multi_reg_int_aug,
+                  title = "Multiple regression with interaction",
+                  dv.labels = c(""),
+                #  dv.labels = c("Average lobster carapace length (mm)"),
+                  digits = 3)
+
+```
+
+
+**Abbreviated Regression Interpretation:**
+
+Several new features stand out in this regression output. The first is the change in extremity of our estimated site coefficients. The first `avg temp` coefficient can be interpreted as the expected change in average carapace length (mm) in August given a 1 unit change in our temperature variable (1º C increase in average temperature in August) holding site constant, at our reference group site AQUE
+
+
+
+
+
+
+Based on the nuances in the coefficients and uncertainty in the two previous models, it's worthwhile to model each site individually in a simple linear regression model. 
+
+
+#### Simple linear regression
+
+We can also run our linear regression model on each site, which would shift our first multiple regression equation to a simple linear model of: 
+
+$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\varepsilon_i$$
+where: 
+- $\mu CL$ is the average carapace length, in millimeters, in August at the site that we're running this regression for
+- $\beta_{0}$ is the intercept, or expected average carapace length, in millimeters, when the average August temperature is 0ºC
+- $\beta_{1}$ is the slope or expected change in average carapace length in August given a 1 unit (1ºC) change in average temperature in August
+
+The main change here is that our $\beta_{0}$ and $\beta_{1}$ terms are now about the particular site we're running our regression model on, rather than having a clause of "holding site constant" or based on a reference group (site AQUE, previously).
+
+
+
+$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\varepsilon_i$$
+
+
+```{r simple-linear-models}
+# to start, we'll make individual subsets for each site:
+
+
+aque_subset <- lobster_temps_august %>% 
+  filter(site %in% c("AQUE"))
+
+carp_subset <- lobster_temps_august %>% 
+  filter(site %in% c("CARP"))
+
+ivee_subset <- lobster_temps_august %>% 
+  filter(site %in% c("IVEE"))
+
+mohk_subset <- lobster_temps_august %>% 
+  filter(site %in% c("MOHK"))
+
+napl_subset <- lobster_temps_august %>% 
+  filter(site %in% c("NAPL"))
+
+
+
+
+
+simple_linear_reg <- lm(formula = avg_size ~ avg_temp, data = )
+
+
+
+```
+
+
+
+
+A significant limitation to this approach is that each model is run on a very limited dataset of only 10 points -- yearly averages from 2012-2022 leaves us with 11 points per subset for all sites other than AQUE, which has 10 due to the lack of August lobster size data in 2014, and MOHK, which has 10 due to the lack of August temperature data in 2017 .
 
 
 
