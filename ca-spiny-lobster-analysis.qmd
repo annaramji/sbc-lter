@@ -4,8 +4,9 @@ author: "Anna Ramji"
 format: html
 editor: visual
 ---
+# California Spiny Lobsters & Reef Bottom Temperatures in Santa Barbara Coastal LTER Reef Sites 
 
-## Introduction
+## Introduction & Background
 
 In this Quarto Document, I'll be working with data from the Santa Barbara Coast LTER sites, analyzing data using statistical analysis methods covered in the Master of Environmental Data Science program's Environmental Data Science (EDS) 222: Statistics for Environmental Data Science course taught by Tamma Carleton (tcarleton\@ucsb.edu).
 
@@ -86,9 +87,9 @@ I've labeled these on a screenshot of a geographically contextual rendered map p
 
 ![SBC LTER selected site locations](figs/sbc-lter-sites.png){fig-alt="This map shows the locations of 5 reef study sites in the SBC LTER project."}
 
-## About the Data
+### About the Data
 
-### Dataset 1: SBC LTER: Reef: California Spiny Lobster Data
+#### Dataset 1: SBC LTER: Reef: California Spiny Lobster Data
 
 This dataset contains records on the abundance, size, and fishing effort on the California Spiny Lobster, *Panulirus interruptus*, at five SBC LTER study sites, with records from August 2012 to August 2023.
 
@@ -108,7 +109,7 @@ Reed, D. and R. Miller. 2023. SBC LTER: Reef: Abundance, size and fishing effort
 
 Carter, Melissa L.; Flick, Reinhard E.; Terrill, Eric; Beckhaus, Elena C.; Martin, Kayla; Fey, Connie L.; Walker, Patricia W.; Largier, John L.; McGowan, John A. (2022). Shore Stations Program Data Archive: Current and historical coastal ocean temperature and salinity measurements from California stations. UC San Diego Library Digital Collections. <https://doi.org/10.6075/J0S75GHD> (Accessed 2023-12-12)
 
-### Dataset 2: SBC LTER: Reef: Bottom temperature data
+#### Dataset 2: SBC LTER: Reef: Bottom temperature data
 
 This dataset contains records of the water temperature at the bottom (or a relatively low, non-surface depth) at nine of the SBC LTER Reef study sites in 15 minute intervals beginning in 2000 up to July 4th, 2023. I accessed this continuous water temperature dataset via the [EDI Data Portal](https://portal.edirepository.org/nis/metadataviewer?packageid=knb-lter-sbc.13.29). The primary data file on this portal is a .csv, which is 372.8 MB. The key variables that I'll be using in this data set are:
 
@@ -731,7 +732,7 @@ Now that we know what our equation means, let's run the multiple regression with
 multi_reg_int_aug <- lm(formula = avg_size ~ avg_temp + site + avg_temp:site,
                         data = lobster_temps_august)
 
-# summary(multi_reg_int_aug)
+ summary(multi_reg_int_aug)
 
 # use sjPlot to show a comparison of the outputs from running these models
 
@@ -747,8 +748,11 @@ sjPlot::tab_model(multi_reg_int_aug,
 
 **Abbreviated Regression Interpretation:**
 
-Several new features stand out in this regression output. The first is the change in extremity of our estimated site coefficients. The first `avg temp` coefficient can be interpreted as the expected change in average carapace length (mm) in August given a 1 unit change in our temperature variable (1º C increase in average temperature in August) holding site constant, at our reference group site AQUE
+Several new features stand out in this regression output. The first is the change in extremity of our estimated site coefficients. The first `avg temp` coefficient can be interpreted as the expected change in average carapace length (mm) in August given a 1 unit change in our temperature variable (1º C increase in average temperature in August) holding site constant, at our reference group site AQUE.
 
+
+
+The small p-value suggests that the probability of getting results at least as extreme as this if the null hypothesis were true is very low. That being said, only our nonsensical intercept and first coefficient, avg_temp, are statistically significant under an $\alpha$ of 0.05. In this interaction model, we got an adjusted $R^2$ value of around 0.36, which would suggest that roughly 36% of the variation in our data can be explained by our model, the low significance levels coupled with the higher adjusted $R^2$ value in our non-interaction multiple regression model on August-only data of roughly 0.38 or 38% suggests that incorporating this interaction term does not yield a better model for our sample data.
 
 
 
@@ -771,46 +775,111 @@ The main change here is that our $\beta_{0}$ and $\beta_{1}$ terms are now about
 
 
 
-$$\mu CL_i =\beta_{0}+\beta_{1} \mu Temp_i +\varepsilon_i$$
-
-
 ```{r simple-linear-models}
-# to start, we'll make individual subsets for each site:
+# to quickly make individual subsets for each site, we can make a subset function:
+
+site_selection <- function(siteID, data_set){
+  data_set %>% filter(site %in% c(siteID))
+}
+
+# then apply this function for each site:
+aque_subset <- site_selection("AQUE", lobster_temps_august)
+carp_subset <- site_selection("CARP", lobster_temps_august)
+ivee_subset <- site_selection("IVEE", lobster_temps_august)
+mohk_subset <- site_selection("MOHK", lobster_temps_august)
+napl_subset <- site_selection("NAPL", lobster_temps_august)
 
 
-aque_subset <- lobster_temps_august %>% 
-  filter(site %in% c("AQUE"))
-
-carp_subset <- lobster_temps_august %>% 
-  filter(site %in% c("CARP"))
-
-ivee_subset <- lobster_temps_august %>% 
-  filter(site %in% c("IVEE"))
-
-mohk_subset <- lobster_temps_august %>% 
-  filter(site %in% c("MOHK"))
-
-napl_subset <- lobster_temps_august %>% 
-  filter(site %in% c("NAPL"))
+aque_simple_reg <- lm(formula = avg_size ~ avg_temp, data = aque_subset)
+carp_simple_reg <- lm(formula = avg_size ~ avg_temp, data = carp_subset)
+ivee_simple_reg <- lm(formula = avg_size ~ avg_temp, data = ivee_subset)
+mohk_simple_reg <- lm(formula = avg_size ~ avg_temp, data = mohk_subset)
+napl_simple_reg <- lm(formula = avg_size ~ avg_temp, data = napl_subset)
+```
 
 
+```{r simple-linear-models-output}
+# show the 3 non-MPA sites' regression outputs
+sjPlot::tab_model(aque_simple_reg, carp_simple_reg, mohk_simple_reg, 
+                  title = "Simple linear regression: SBC LTER Reef study sites (not in MPAs)",
+                  dv.labels = c("Arroyo Quemado", "Carpinteria", "Mohawk"),
+                  digits = 3)
+
+# show the 2 MPA sites' regression outputs
+sjPlot::tab_model(ivee_simple_reg, napl_simple_reg, 
+                  title = "Simple linear regression: SBC LTER Reef study sites (within MPAs)",
+                  dv.labels = c("Isla Vista Reef", "Naples Reef"),
+                  digits = 3)
+
+```
+
+**Analysis of simple linear regression results**
+
+I was genuinely surprised by these outputs. I expected the individual relationships between average lobster size (carapace length) and average reef bottom temperature to be stronger and more statistically significant when broken down on a simple site-by-site level. 
+
+I particularly expected to see a new, *negative* estimate for the Naples reef site, which had previously had an oddly highly positive estimate that was surprisingly statistically significant under an $\alpha$ level of 0.0001. When isolating that site's data, we now have a negative estimate of roughly -1.8, but a p-value of 0.2, which is much larger than the previous p-value. This means that the probability of getting results at least as extreme as ours if the null hypothesis were true is around 20%. 
+
+*Because these are simple linear models, we can use the $R^2$ values in our interpretation of the results, rather than the adjusted $R^2$ values.*
+
+- The highest $R^2$ value was at the Arroyo Quemado reef site, with a value of 0.44, meaning that around 44% of the variation in our data at the AQUE site can be explained by our model, or 44% of the variation in average lobster carapace size in August can be explained by the average reef bottom temperature. With both the intercept (nonsensical) and average temperature coefficient being statistically significant results under an $\alpha$ level of 0.05, this is an exciting result.  
+
+
+That's pretty much where the statistically significant "good news" ends, though classifying this as "good" or "bad" is wrong and limits our ability to learn from these results :) 
+
+- The next-highest $R^2$ value is from our Naples Reef regression, and it tells us that roughly 16% of the variation in our Naples Reef data can be explained by our model. I explained the significance of the estimates earlier, and they ultimately lead me to think that there is a lot more going on at the Naples site that is impacting average lobster size than just average reef bottom temperature. 
+
+- The third-highest $R^2$ value is from the Mohawk Reef regression output and suggests that around 13% of the variation in the Mohawk Reef data can be explained by our model (change in average reef bottom temperatures in August). The nonsensical intercept of 90 has a high siginficance level, and the estimate for the average temperature coefficient is roughly -1.1, which means that for a 1 unit change in average reef bottom temperature in August, average lobster carapace size in August at the Mohawk Reef site is expected to decrease by around 1.1 mm. This estimate has a p-value of 0.3, which is not statistically significant under our $\alpha$ level of 0.05. 
+
+The other two sites -- Carpinteria Reef and Isla Vista Reef -- have high p-values for their coefficient estimates and very low $R^2$ values, with just under 1.5% of the variation in the data able to be explained by the models.  
+
+Some key takeaways from this are that the Naples site results particularly changed after being separated from the rest of the data -- the sign and degree of the temperature coefficient changed, though its significance level decreased and had a relatively low $R^2$ value. 
+
+**Another key takeaway is that our model works fairly well for the data at the Arroyo Quemado site: we obtained statistically significant estimates and an $R^2$ value of 0.44 with just one term on the right side of the equation.**
 
 
 
-simple_linear_reg <- lm(formula = avg_size ~ avg_temp, data = )
+A significant limitation to this approach is that each model is run on a very limited dataset of only 10 points -- yearly averages from 2012-2022 leaves us with 11 points per subset for all sites other than AQUE, which has 10 due to the lack of August lobster size data in 2014, and MOHK, which has 10 due to the lack of August temperature data in 2017.
 
 
+
+
+```{r mpa-status, eval=FALSE}
+# here I tried to make a column called mpa_status, to see if there was an MPA component in the relationship between average temperature and average size. 
+
+mpa_lobster_temp <- lobster_temps_august %>% 
+  mutate(mpa_status = 
+          # as.factor(
+           (if_else(site %in% c("IVEE", "NAPL"), "MPA", "non-MPA"))
+         #)
+        ) %>% 
+  group_by(year, site, mpa_status)
+
+# unfortunately, I couldn't get this to work. I'll come revisit this sometime. 
+lobster_mpa_reg <- lm(formula = avg_size ~ avg_temp + site + mpa_status, data = mpa_lobster_temp)
+summary(lobster_mpa_reg)
 
 ```
 
 
 
+## Conclusion
 
-A significant limitation to this approach is that each model is run on a very limited dataset of only 10 points -- yearly averages from 2012-2022 leaves us with 11 points per subset for all sites other than AQUE, which has 10 due to the lack of August lobster size data in 2014, and MOHK, which has 10 due to the lack of August temperature data in 2017 .
+The limitations of the lobster data and the low quantity of statistically significant results lead me to question the strength of the results in this study for the most part. One notable exception has been with the Arroyo Quemado Reef data, where -- with a simple linear model -- the regression results suggest that roughly 44% of the variation in the average lobster carapace size data collected in August at that site can be explained by average reef bottom temperatures in August. 
 
+
+Early on in my data analysis process, I considered dropping the AQUE site altogether due to its missing August data in 2014 and unique presence of September data in that year. 
+
+
+
+
+
+
+### Additional Considerations & Possible Next Steps
+
+Given more time and resources, there are a few elements of this analysis that I would change and several "next steps" that would be interesting to pursue.
 
 
 
 ## Works Cited:
 
-Bris, A. L., Pershing, A. J., Gaudette, J., Pugh, T. L., & Reardon, K. M. (2017). Multi-scale quantification of the effects of temperature on size at maturity in the American lobster (Homarus americanus ). Fisheries Research, 186, 397-406. doi:10.1016/j.fishres.2016.09.008
+Bris, A. L., Pershing, A. J., Gaudette, J., Pugh, T. L., & Reardon, K. M. (2017). Multi-scale quantification of the effects of temperature on size at maturity in the American lobster (Homarus americanus). Fisheries Research, 186, 397-406. doi:10.1016/j.fishres.2016.09.008

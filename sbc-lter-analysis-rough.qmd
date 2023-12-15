@@ -588,7 +588,7 @@ lobster_august <- lobster_temps_august |>
   #   site %in% c("IVEE", "NAPL") ~ "TRUE",
   #   
   #                  ))
-  mutate(mpa_status = if_else(site %in% c("IVEE", "NAPL"), TRUE, FALSE))
+  mutate(mpa_status = if_else(site %in% c("IVEE", "NAPL"), "MPA", "non-MPA"))
 
 lobster_mpa_reg <- lm(formula = avg_size ~ avg_temp + site + mpa_status, data = lobster_august)
 summary(lobster_mpa_reg)
@@ -985,7 +985,7 @@ summary(lm(formula = index ~ avg_temp, data = diversity_temp_trend))
 
 Given more time and resources, there are a few elements of this analysis that I would change and several "next steps" that would be interesting to pursue.
 
-The first change that I would make to my analysis is to include the monthly average temperatures for both August and September at the AQUE study site in 2014. Due to the limited scope and nature of this project, I was unable to successfully perform that operation.
+
 
 Based on preliminary graphing of our average annual reef bottom temperatures, there appeared to be another temperature spike around 2018. It could be interesting to investigate the circumstances of this event, as well as any notable impacts on California Spiny Lobster's average carapace length, or biodiversity indices of fish populations at different SBC LTER study sites.
 
