@@ -867,7 +867,7 @@ summary(lobster_mpa_reg)
 The limitations of the lobster data and the low quantity of statistically significant results lead me to question the strength of the results in this study for the most part. One notable exception has been with the Arroyo Quemado Reef data, where -- with a simple linear model -- the regression results suggest that roughly 44% of the variation in the average lobster carapace size data collected in August at that site can be explained by average reef bottom temperatures in August. 
 
 
-Early on in my data analysis process, I considered dropping the AQUE site altogether due to its missing August data in 2014 and unique presence of September data in that year. 
+Early on in my data analysis process, I considered dropping the AQUE site altogether due to its missing August data in 2014 and unique presence of September data in that year. After continuing on with my analysis, eventually making subsets with and without that September data, running various levels of regression, and plotting averages left and right, I came to appreciate the challenge that this data posed. If I had dropped it, I would have completely missed the most statistically significant result in the whole dataset. 
 
 
 
@@ -877,6 +877,12 @@ Early on in my data analysis process, I considered dropping the AQUE site altoge
 ### Additional Considerations & Possible Next Steps
 
 Given more time and resources, there are a few elements of this analysis that I would change and several "next steps" that would be interesting to pursue.
+
+
+As I have mentioned throughout this notebook, the limitations of the data at various steps proved challenging. I've already discussed the challenges of the September 2014 data, but I was also frustrated by the lack of temperature data for the Mohawk site in August of 2017. While I considered using functions like `na.approx` from the `zoo` package to make up for this, I ultimately ran out of time to fully achieve the outputs that would make inlcuding these steps worthwhile. 
+
+I also attempted to investigate the possible impact that MPA status (whether or not a site falls within a Marine Protected Area) had on the relationship between average August temperature and size, I also failed to get this code to yield any satisfactory outputs.  
+
 
 
 
