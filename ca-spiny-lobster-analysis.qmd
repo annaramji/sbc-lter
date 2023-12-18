@@ -1,9 +1,13 @@
 ---
 title: "California Spiny Lobsters & Reef Bottom Temperatures"
 author: "Anna Ramji"
-format: html
+format: 
+  html:
+    code-fold: true
+    toc: true
 editor: visual
 ---
+
 # California Spiny Lobsters & Reef Bottom Temperatures in Santa Barbara Coastal LTER Reef Sites 
 
 ## Introduction & Background
@@ -16,6 +20,10 @@ I later learned that Maine Lobster fisheries are threatened by climate change, w
 
 Lobsters are sensitive to change, and it can impact their behavior (Quin, Rochette, 2015). Recent studies suggests that changing sea temperatures have implications on the size at which *Homarus americanus* reach maturity, and bacterial diversity and cultivability (Ellertson et. al., 2022, Ishaq et. al., 2023). Warming that impacts areas that juvenile lobsters rely on can lead them to become inhospitable, which is particularly dangerous as the Gulf of Maine has been warming at a rate faster than 99% of the world's oceans (Rheuban et. al., 2017, Gulf of Maine Research Institute, 2021).
 
+## California Spiny Lobsters
+
+
+
 **Given all of this established background and concern over the American Lobsters, as a Santa Barbara resident and lifelong fan of the California coast and all of its marine life, I wondered if the California Spiny Lobster *Panulirus interruptus,* was facing similar threats.**
 
 The species is currently listed as a species of "least concern" on the IUCN Redlist, and their populations have been managed by the California Department of Fish and Wildlife for decades. If you aren't already convinced, I'm happy to inform you that the CA Spiny Lobster is significant both economically and ecologically. In the 2017-2018 fishing season, the commercial fishery accounted for roughly \$12.7 million in ex-vessel value, and the recreational fishery contributes "between \$33-40 million in consumer spending to the California economy each year," (California Department of Fish and Wildlife, 2019).
@@ -24,7 +32,7 @@ Do you think kelp forests are cool? Well, these lobsters are also a keystone spe
 
 The Santa Barbara Coast and the Channel Islands National Park are key areas of the Spiny lobsters' habitat:
 
-![](figs/ca-spiny-lobster-habitat.jpg){width="538"}
+![](figs/ca-spiny-lobster-habitat.jpg)
 
 The presence of eelgrass or surfgrass in the rocky reefs in these areas provide critical habitat for the 11 larval stages of Spiny lobsters.
 
@@ -32,9 +40,8 @@ The Santa Barbara Coastal Long Term Ecological Research project (SBC LTER) has m
 
 To answer this, I used Carapace Length as it is the primary size metric for lobsters and is used as a proxy measurement for age. I also used reef bottom temperatures (as apposed to sea surface temperatures (SST). All of this data was collected at reef study sites in the SBC LTER network.
 
-# Background
 
-## California Spiny Lobsters
+
 
 *Panulirus interruptus*
 
